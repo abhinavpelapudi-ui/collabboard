@@ -1,0 +1,31 @@
+{
+  "name": "@collabboard/server",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.3",
+    "@collabboard/shared": "*",
+    "@hono/node-server": "^1.19.9",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^16.4.5",
+    "hono": "^4.11.9",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.12.0",
+    "socket.io": "^4.7.5",
+    "uuid": "^13.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.14.10",
+    "@types/pg": "^8.11.6",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  }
+}
