@@ -11,6 +11,7 @@ import aiRouter from './routes/ai'
 import authRouter from './routes/auth'
 import adminRouter from './routes/admin'
 import oauthRouter from './routes/oauth'
+import notificationsRouter from './routes/notifications'
 import { registerSocketHandlers } from './sockets/handlers'
 import { setIO } from './sockets/socketServer'
 import { decodeSocketToken } from './middleware/auth'
@@ -34,6 +35,7 @@ app.route('/api/boards', boardsRouter)
 app.route('/api/boards/:id/members', membersRouter)
 app.route('/api/ai', aiRouter)
 app.route('/api/admin', adminRouter)
+app.route('/api/notifications', notificationsRouter)
 
 // ─── Start HTTP server ────────────────────────────────────────────────────────
 const server = serve({ fetch: app.fetch, port: PORT }, async () => {

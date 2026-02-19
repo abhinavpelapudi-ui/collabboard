@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { pool } from '../db'
 import { requireAuth, AuthVariables } from '../middleware/auth'
 import { getUserRole } from './boards'
-import { notifyRoleChanged } from '../sockets/socketServer'
+import { notifyRoleChanged, notifyUser } from '../sockets/socketServer'
 import { z } from 'zod'
 
 const members = new Hono<{ Variables: AuthVariables }>()
@@ -83,6 +83,24 @@ members.post('/', requireAuth, async (c) => {
      ON CONFLICT (board_id, user_id) DO UPDATE SET role = $3`,
     [boardId, targetUser.id, newRole]
   )
+
+  // Get board title and inviter name for the notification
+  const { rows: boardRows } = await pool.query(
+    `SELECT b.title, u.name AS inviter_name FROM boards b JOIN users u ON u.id = $2 WHERE b.id = $1`,
+    [boardId, userId]
+  )
+  const boardTitle = boardRows[0]?.title ?? 'Untitled Board'
+  const inviterName = boardRows[0]?.inviter_name ?? 'Someone'
+
+  // Persist notification
+  const { rows: notifRows } = await pool.query(
+    `INSERT INTO notifications (user_id, type, data)
+     VALUES ($1, 'board_shared', $2) RETURNING id, type, data, read_at, created_at`,
+    [targetUser.id, JSON.stringify({ boardId, boardTitle, sharedBy: inviterName, role: newRole })]
+  )
+
+  // Push real-time event if the user is online
+  notifyUser(targetUser.id, 'notification:new', notifRows[0])
 
   return c.json({ user_id: targetUser.id, name: targetUser.name, email: targetUser.email, role: newRole }, 201)
 })

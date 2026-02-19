@@ -38,6 +38,17 @@ export function setCachedRole(socketId: string, boardId: string, role: string) {
 }
 
 /**
+ * Pushes any event to all active sockets for a given user (used for notifications).
+ */
+export function notifyUser(userId: string, event: string, data: unknown) {
+  if (!io) return
+  const sockets = userSockets.get(userId) ?? new Set<string>()
+  for (const socketId of sockets) {
+    io.to(socketId).emit(event, data)
+  }
+}
+
+/**
  * Pushes a `role:changed` event to all active sockets for `userId`
  * and updates their role cache so subsequent object events are enforced correctly.
  */

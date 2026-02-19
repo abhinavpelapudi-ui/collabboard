@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { io, Socket } from 'socket.io-client'
 import { Board, BoardRole } from '@collabboard/shared'
 import { getToken, getUser } from '../hooks/useAuth'
 import UpgradeModal from '../components/ui/UpgradeModal'
 import UserMenu from '../components/ui/UserMenu'
+import NotificationBell from '../components/ui/NotificationBell'
 
 const FREE_BOARD_LIMIT = 2
 
@@ -28,6 +30,7 @@ export default function Dashboard() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [showUpgrade, setShowUpgrade] = useState(false)
+  const socketRef = useRef<Socket | null>(null)
 
   const plan = user?.plan ?? 'free'
   const ownedCount = boards.filter(b => b.role === 'owner').length
@@ -62,7 +65,16 @@ export default function Dashboard() {
     setBoards(prev => prev.filter(b => b.id !== id))
   }
 
-  useEffect(() => { fetchBoards() }, [])
+  useEffect(() => {
+    fetchBoards()
+    // Connect socket for real-time notifications
+    const token = getToken()
+    if (token) {
+      const socket = io(SERVER_URL, { auth: { token }, transports: ['websocket'] })
+      socketRef.current = socket
+      return () => { socket.disconnect(); socketRef.current = null }
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -79,6 +91,7 @@ export default function Dashboard() {
               )}
             </span>
           )}
+          <NotificationBell socket={socketRef.current} />
           {user && <UserMenu user={user} />}
         </div>
       </header>
