@@ -75,6 +75,16 @@ CREATE TABLE IF NOT EXISTS objects (
   updated_at  TIMESTAMPTZ DEFAULT now()
 );
 
+-- In-app notifications
+CREATE TABLE IF NOT EXISTS notifications (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    TEXT REFERENCES users(id) ON DELETE CASCADE,
+  type       TEXT NOT NULL,   -- 'board_shared'
+  data       JSONB NOT NULL DEFAULT '{}',
+  read_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_boards_owner     ON boards(owner_id);
 CREATE INDEX IF NOT EXISTS idx_objects_board    ON objects(board_id);
