@@ -79,6 +79,12 @@ export interface BoardMember {
   role: BoardRole
 }
 
+export interface BoardContributor {
+  user_id: string
+  name: string
+  email: string
+}
+
 export interface Board {
   id: string
   title: string
@@ -86,6 +92,7 @@ export interface Board {
   workspace_id?: string | null
   created_at: string
   role?: BoardRole  // current user's role on this board
+  contributors?: BoardContributor[]
 }
 
 // ─── Workspace ───────────────────────────────────────────────────────────────

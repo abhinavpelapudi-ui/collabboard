@@ -259,9 +259,39 @@ export default function Dashboard() {
                       className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-indigo-500 transition-colors cursor-pointer group"
                       onClick={() => navigate(`/board/${board.id}`)}
                     >
-                      <div className="w-full h-28 bg-gray-800 rounded-lg mb-4 flex items-center justify-center text-gray-600 text-sm">
+                      <div className="w-full h-28 bg-gray-800 rounded-lg mb-3 flex items-center justify-center text-gray-600 text-sm">
                         Board
                       </div>
+
+                      {/* Contributor avatars */}
+                      {board.contributors && board.contributors.length > 0 && (() => {
+                        const shown = board.contributors.slice(0, 4)
+                        const extra = board.contributors.length - shown.length
+                        const colors = ['bg-indigo-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500']
+                        return (
+                          <div className="flex items-center mb-3">
+                            <div className="flex -space-x-2">
+                              {shown.map((c, i) => (
+                                <div
+                                  key={c.user_id}
+                                  title={c.name || c.email}
+                                  className={`w-6 h-6 rounded-full ${colors[i % colors.length]} border-2 border-gray-900 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0`}
+                                >
+                                  {(c.name || c.email)[0].toUpperCase()}
+                                </div>
+                              ))}
+                              {extra > 0 && (
+                                <div className="w-6 h-6 rounded-full bg-gray-700 border-2 border-gray-900 flex items-center justify-center text-gray-300 text-[10px] font-bold flex-shrink-0">
+                                  +{extra}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {board.contributors.length} contributor{board.contributors.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        )
+                      })()}
 
                       {editingId === board.id ? (
                         <input

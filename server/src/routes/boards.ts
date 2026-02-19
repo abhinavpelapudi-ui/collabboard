@@ -33,7 +33,15 @@ boards.get('/', requireAuth, async (c) => {
          (SELECT COUNT(*) FROM objects WHERE board_id = b.id) AS object_count,
          CASE WHEN b.owner_id = $1 THEN 'owner'
               WHEN bm.user_id IS NOT NULL THEN bm.role
-              ELSE wm.role END AS role
+              ELSE wm.role END AS role,
+         (SELECT COALESCE(json_agg(c), '[]'::json) FROM (
+           SELECT u.id AS user_id, u.name, u.email
+           FROM board_members bm2
+           JOIN users u ON u.id = bm2.user_id
+           WHERE bm2.board_id = b.id
+           ORDER BY CASE bm2.role WHEN 'owner' THEN 0 WHEN 'editor' THEN 1 ELSE 2 END, u.name
+           LIMIT 5
+         ) c) AS contributors
        FROM boards b
        LEFT JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = $1
        LEFT JOIN workspace_members wm ON wm.workspace_id = b.workspace_id AND wm.user_id = $1
