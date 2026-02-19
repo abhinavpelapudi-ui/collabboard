@@ -37,6 +37,7 @@ function CircleShape({ object, boardId, socketRef, isSelected }: Props) {
       fill: 'transparent',
       currentText: object.text ?? '',
       onInput: (text) => {
+        updateObject(object.id, { text })
         socketRef.current?.emit('object:update', { boardId, objectId: object.id, props: { text } })
       },
       onCommit: (newText) => {

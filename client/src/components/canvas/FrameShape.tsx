@@ -37,6 +37,7 @@ function FrameShape({ object, boardId, socketRef, isSelected }: Props) {
       fill: '#374151',
       currentText: object.title,
       onInput: (title) => {
+        updateObject(object.id, { title } as any)
         socketRef.current?.emit('object:update', { boardId, objectId: object.id, props: { title } as any })
       },
       onCommit: (newTitle) => {

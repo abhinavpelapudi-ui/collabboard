@@ -74,7 +74,9 @@ function StickyNote({ object, boardId, socketRef, isSelected }: Props) {
     }
 
     textarea.addEventListener('input', () => {
-      socketRef.current?.emit('object:update', { boardId, objectId: object.id, props: { text: textarea.value } })
+      const text = textarea.value
+      updateObject(object.id, { text })
+      socketRef.current?.emit('object:update', { boardId, objectId: object.id, props: { text } })
     })
     textarea.addEventListener('blur', finish)
     textarea.addEventListener('keydown', (e) => {
