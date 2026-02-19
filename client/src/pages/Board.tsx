@@ -10,6 +10,7 @@ import Toolbar from '../components/ui/Toolbar'
 import PresenceBar from '../components/ui/PresenceBar'
 import AIChat from '../components/ui/AIChat'
 import ShareModal from '../components/ui/ShareModal'
+import BoardChat from '../components/ui/BoardChat'
 import { Board as BoardType, BoardRole } from '@collabboard/shared'
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
@@ -25,6 +26,7 @@ export default function Board() {
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState('')
   const [showShare, setShowShare] = useState(false)
+  const [showChat, setShowChat] = useState(false)
 
   const isViewer = role === 'viewer'
   const canEdit = role === 'editor' || role === 'owner'
@@ -107,6 +109,13 @@ export default function Board() {
             </button>
           )}
           <button
+            className={`text-xs px-2 py-1 rounded bg-gray-800 transition-colors ${showChat ? 'text-indigo-400 ring-1 ring-indigo-500' : 'text-gray-400 hover:text-white'}`}
+            onClick={() => setShowChat(s => !s)}
+            title="Board chat"
+          >
+            💬 Chat
+          </button>
+          <button
             className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800"
             onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link copied!') }}
           >
@@ -126,6 +135,15 @@ export default function Board() {
 
       {/* Share / Manage access modal */}
       {showShare && <ShareModal boardId={boardId} onClose={() => setShowShare(false)} />}
+
+      {/* Board chat panel */}
+      {showChat && (
+        <BoardChat
+          boardId={boardId}
+          socket={socketRef.current}
+          onClose={() => setShowChat(false)}
+        />
+      )}
     </div>
   )
 }

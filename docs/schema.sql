@@ -85,7 +85,18 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Board chat messages
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  board_id   UUID NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+  user_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  user_name  TEXT NOT NULL,
+  content    TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_chat_board      ON chat_messages(board_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_boards_owner     ON boards(owner_id);
 CREATE INDEX IF NOT EXISTS idx_objects_board    ON objects(board_id);
 CREATE INDEX IF NOT EXISTS idx_objects_zindex   ON objects(board_id, z_index);

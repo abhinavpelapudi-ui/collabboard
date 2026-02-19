@@ -88,6 +88,28 @@ boards.post('/', requireAuth, async (c) => {
   }
 })
 
+// ─── GET /api/boards/:id/chat — fetch recent chat history ────────────────────
+
+boards.get('/:id/chat', requireAuth, async (c) => {
+  const boardId = c.req.param('id')
+  const role = await getUserRole(boardId, c.get('userId'))
+  if (!role) return c.json({ error: 'Board not found' }, 404)
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, user_id, user_name, content, created_at
+       FROM chat_messages
+       WHERE board_id = $1
+       ORDER BY created_at DESC
+       LIMIT 100`,
+      [boardId]
+    )
+    return c.json(rows.reverse())
+  } catch {
+    return c.json({ error: 'Failed to fetch chat' }, 500)
+  }
+})
+
 // ─── GET /api/boards/:id — get a single board ────────────────────────────────
 
 boards.get('/:id', requireAuth, async (c) => {

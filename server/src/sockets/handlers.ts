@@ -148,6 +148,33 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
     }
   })
 
+  // ─── chat:send ────────────────────────────────────────────────────────────
+  socket.on('chat:send', async ({ boardId, content }: { boardId: string; content: string }) => {
+    const role = getCachedRole(socket.id, boardId)
+    if (!role) return // user hasn't joined the board room
+
+    const trimmed = (content ?? '').trim().slice(0, 2000)
+    if (!trimmed) return
+
+    try {
+      const { rows } = await pool.query(
+        `INSERT INTO chat_messages (board_id, user_id, user_name, content)
+         VALUES ($1, $2, $3, $4) RETURNING *`,
+        [boardId, socket.userId, socket.userName, trimmed]
+      )
+      io.to(`board:${boardId}`).emit('chat:message', {
+        id: rows[0].id,
+        userId: socket.userId,
+        userName: socket.userName,
+        userColor: socket.userColor,
+        content: trimmed,
+        createdAt: rows[0].created_at,
+      })
+    } catch (err) {
+      console.error('Failed to persist chat message', err)
+    }
+  })
+
   // ─── disconnect ───────────────────────────────────────────────────────────
   socket.on('disconnect', () => {
     unregisterUserSocket(socket.userId, socket.id)
