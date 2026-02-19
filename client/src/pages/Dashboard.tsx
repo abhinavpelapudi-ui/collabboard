@@ -105,7 +105,9 @@ export default function Dashboard() {
       setSelectedWorkspaceId(data.id)
       setNewWsName('')
       setCreatingWorkspace(false)
-    } catch { /* ignore */ }
+    } catch (err: any) {
+      if (err.response?.data?.upgradeRequired) { setCreatingWorkspace(false); setNewWsName(''); setShowUpgrade(true) }
+    }
   }
 
   return (
@@ -199,6 +201,11 @@ export default function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 New workspace
+                {plan === 'free' && (
+                  <span className="ml-auto text-[10px] text-gray-600">
+                    {workspaces.filter(w => w.role === 'owner').length}/1
+                  </span>
+                )}
               </button>
             )}
           </div>

@@ -39,11 +39,26 @@ workspaces.get('/', requireAuth, async (c) => {
 
 // ─── POST /api/workspaces — create workspace ─────────────────────────────────
 
+const FREE_WORKSPACE_LIMIT = 1
+
 workspaces.post('/', requireAuth, async (c) => {
   const userId = c.get('userId')
   const body = await c.req.json()
   const schema = z.object({ name: z.string().min(1).max(80) })
   const { name } = schema.parse(body)
+
+  // Enforce free-plan workspace limit
+  const { rows: planRows } = await pool.query(
+    `SELECT u.plan,
+            (SELECT COUNT(*) FROM workspaces WHERE owner_id = $1) AS ws_count
+     FROM users u WHERE u.id = $1`,
+    [userId]
+  )
+  const wsCount = Number(planRows[0]?.ws_count ?? 0)
+  const plan = planRows[0]?.plan ?? 'free'
+  if (plan === 'free' && wsCount >= FREE_WORKSPACE_LIMIT) {
+    return c.json({ error: 'Free plan allows 1 workspace. Upgrade to create more.', upgradeRequired: true }, 403)
+  }
 
   const { rows } = await pool.query(
     `INSERT INTO workspaces (name, owner_id) VALUES ($1, $2) RETURNING *`,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Socket } from 'socket.io-client'
 import axios from 'axios'
 import { getToken, getUser } from '../../hooks/useAuth'
+import { usePresenceStore } from '../../stores/presenceStore'
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
 
@@ -35,6 +36,7 @@ function colorFromId(id: string) {
 
 export default function BoardChat({ boardId, socket, onClose }: Props) {
   const user = getUser()
+  const onlineUsers = usePresenceStore(s => s.users)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
@@ -119,6 +121,28 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
           </svg>
         </button>
       </div>
+
+      {/* Online members */}
+      {onlineUsers.length > 0 && (
+        <div className="flex-shrink-0 px-4 py-2 border-b border-gray-800 bg-gray-900/60">
+          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5">Online now</p>
+          <div className="flex flex-wrap gap-1.5">
+            {onlineUsers.map(u => (
+              <div key={u.userId} className="flex items-center gap-1 bg-gray-800 rounded-full pl-1 pr-2 py-0.5">
+                <div
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
+                  style={{ backgroundColor: u.userColor }}
+                >
+                  {(u.userName || '?')[0].toUpperCase()}
+                </div>
+                <span className="text-[11px] text-gray-300 max-w-[80px] truncate">
+                  {u.userId === user?.userId ? 'You' : u.userName}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
