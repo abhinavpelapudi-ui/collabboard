@@ -3,6 +3,8 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
 import { Server } from 'socket.io'
+import { createAdapter } from '@socket.io/redis-adapter'
+import Redis from 'ioredis'
 import dotenv from 'dotenv'
 import { testConnection, runMigrations } from './db'
 import { rateLimit } from './middleware/rateLimit'
@@ -56,6 +58,16 @@ const io = new Server(server as any, {
   pingTimeout: 60_000,
 })
 setIO(io)
+
+// ─── Redis adapter (enables horizontal scaling across multiple instances) ─────
+if (process.env.REDIS_URL) {
+  const pubClient = new Redis(process.env.REDIS_URL)
+  const subClient = pubClient.duplicate()
+  io.adapter(createAdapter(pubClient, subClient))
+  console.log('🔴 Redis adapter connected')
+} else {
+  console.log('⚠️  No REDIS_URL — using in-memory adapter (single instance only)')
+}
 
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token
