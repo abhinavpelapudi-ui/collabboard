@@ -34,6 +34,9 @@ function RectShape({ object, boardId, socketRef, isSelected }: Props) {
       fontSize: 14,
       fill: object.fill,
       currentText: object.text ?? '',
+      onInput: (text) => {
+        socketRef.current?.emit('object:update', { boardId, objectId: object.id, props: { text } })
+      },
       onCommit: (newText) => {
         if (newText === (object.text ?? '')) return
         pushUndo()

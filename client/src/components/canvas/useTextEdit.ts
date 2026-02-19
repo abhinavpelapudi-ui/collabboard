@@ -9,6 +9,7 @@ interface Options {
   fill: string         // background color for textarea
   currentText: string
   onCommit: (text: string) => void
+  onInput?: (text: string) => void  // called on every keystroke for real-time sync
 }
 
 /**
@@ -59,6 +60,9 @@ export function openTextEditor(opts: Options) {
     opts.onCommit(textarea.value)
   }
 
+  if (opts.onInput) {
+    textarea.addEventListener('input', () => opts.onInput!(textarea.value))
+  }
   textarea.addEventListener('blur', finish)
   textarea.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') finish()

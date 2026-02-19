@@ -36,6 +36,9 @@ function FrameShape({ object, boardId, socketRef, isSelected }: Props) {
       fontSize: 12,
       fill: '#374151',
       currentText: object.title,
+      onInput: (title) => {
+        socketRef.current?.emit('object:update', { boardId, objectId: object.id, props: { title } as any })
+      },
       onCommit: (newTitle) => {
         if (!newTitle.trim() || newTitle === object.title) return
         pushUndo()

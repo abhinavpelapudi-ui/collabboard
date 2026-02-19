@@ -66,6 +66,9 @@ function TextShape({ object, boardId, socketRef, isSelected }: Props) {
         socketRef.current?.emit('object:update', { boardId, objectId: object.id, props })
       }
     }
+    textarea.addEventListener('input', () => {
+      socketRef.current?.emit('object:update', { boardId, objectId: object.id, props: { text: textarea.value } })
+    })
     textarea.addEventListener('blur', finish)
     textarea.addEventListener('keydown', (e) => { if (e.key === 'Escape') finish() })
   }
