@@ -28,6 +28,18 @@ export default function Board() {
   const objectsRef = useRef(objects)
   useEffect(() => { selectedIdsRef.current = selectedIds }, [selectedIds])
   useEffect(() => { objectsRef.current = objects }, [objects])
+
+  // Unread chat badge — count incoming chat messages while panel is closed
+  useEffect(() => {
+    const socket = socketRef.current
+    if (!socket || !isConnected) return
+    function onChatMessage(raw: any) {
+      if ((raw.messageType ?? 'chat') !== 'chat') return
+      if (!showChatRef.current) setUnreadChat(n => n + 1)
+    }
+    socket.on('chat:message', onChatMessage)
+    return () => { socket.off('chat:message', onChatMessage) }
+  }, [isConnected])
   const [board, setBoard] = useState<BoardType | null>(null)
   const [role, setRole] = useState<BoardRole | null>(null)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -35,6 +47,9 @@ export default function Board() {
   const [showShare, setShowShare] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [showActivity, setShowActivity] = useState(false)
+  const [unreadChat, setUnreadChat] = useState(0)
+  const showChatRef = useRef(showChat)
+  useEffect(() => { showChatRef.current = showChat }, [showChat])
 
   const isViewer = role === 'viewer'
   const canEdit = role === 'editor' || role === 'owner'
@@ -160,11 +175,16 @@ export default function Board() {
             </button>
           )}
           <button
-            className={`text-xs px-2 py-1 rounded bg-gray-800 transition-colors ${showChat ? 'text-indigo-400 ring-1 ring-indigo-500' : 'text-gray-400 hover:text-white'}`}
-            onClick={() => { setShowChat(s => !s); setShowActivity(false) }}
+            className={`relative text-xs px-2 py-1 rounded bg-gray-800 transition-colors ${showChat ? 'text-indigo-400 ring-1 ring-indigo-500' : 'text-gray-400 hover:text-white'}`}
+            onClick={() => { setShowChat(s => !s); setUnreadChat(0); setShowActivity(false) }}
             title="Board chat"
           >
             💬 Chat
+            {unreadChat > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
+                {unreadChat > 9 ? '9+' : unreadChat}
+              </span>
+            )}
           </button>
           <button
             className={`text-xs px-2 py-1 rounded bg-gray-800 transition-colors ${showActivity ? 'text-amber-400 ring-1 ring-amber-500' : 'text-gray-400 hover:text-white'}`}
