@@ -4,10 +4,12 @@ import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { pool } from '../db'
 import { v4 as uuidv4 } from 'uuid'
+import { sendWelcomeEmail, sendEmailConfirmation, sendOTPEmail } from '../email'
 
 const auth = new Hono()
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-prod'
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'
 
 // POST /api/auth/register
 auth.post('/register', async (c) => {
@@ -27,7 +29,6 @@ auth.post('/register', async (c) => {
 
   const { name, email, password } = parsed
 
-  // Check if email already exists
   const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email])
   if (existing.rows.length > 0) {
     return c.json({ error: 'Email already registered. Please sign in.' }, 409)
@@ -40,6 +41,16 @@ auth.post('/register', async (c) => {
     `INSERT INTO users (id, name, email, password_hash) VALUES ($1, $2, $3, $4)`,
     [userId, name, email, passwordHash]
   )
+
+  // Send welcome + confirmation emails (non-blocking)
+  const confirmToken = uuidv4()
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+  await pool.query(
+    `INSERT INTO email_confirmations (token, user_id, expires_at) VALUES ($1, $2, $3)`,
+    [confirmToken, userId, expiresAt]
+  )
+  sendEmailConfirmation(email, name, confirmToken).catch(console.error)
+  sendWelcomeEmail(email, name).catch(console.error)
 
   const token = jwt.sign({ sub: userId, name, email }, JWT_SECRET, { expiresIn: '7d' })
   return c.json({ token, userId, name, email }, 201)
@@ -72,6 +83,9 @@ auth.post('/login', async (c) => {
   }
 
   const user = result.rows[0]
+  if (!user.password_hash) {
+    return c.json({ error: 'This account uses social login. Please sign in with Google or GitHub.' }, 401)
+  }
   const valid = await bcrypt.compare(password, user.password_hash)
   if (!valid) {
     return c.json({ error: 'Incorrect password.' }, 401)
@@ -91,12 +105,112 @@ auth.get('/me', async (c) => {
   if (!token) return c.json({ error: 'No token' }, 401)
   try {
     const payload = jwt.verify(token, JWT_SECRET) as { sub: string; name: string; email: string }
-    const { rows } = await pool.query('SELECT plan FROM users WHERE id = $1', [payload.sub])
+    const { rows } = await pool.query('SELECT plan, email_confirmed FROM users WHERE id = $1', [payload.sub])
     const plan = rows[0]?.plan ?? 'free'
-    return c.json({ userId: payload.sub, name: payload.name, email: payload.email, plan })
+    const emailConfirmed = rows[0]?.email_confirmed ?? false
+    return c.json({ userId: payload.sub, name: payload.name, email: payload.email, plan, emailConfirmed })
   } catch {
     return c.json({ error: 'Invalid token' }, 401)
   }
+})
+
+// GET /api/auth/confirm-email?token=... — confirm email via link
+auth.get('/confirm-email', async (c) => {
+  const token = c.req.query('token')
+  if (!token) return c.redirect(`${CLIENT_URL}/sign-in?error=invalid_token`)
+
+  const { rows } = await pool.query(
+    `SELECT user_id, expires_at, confirmed_at FROM email_confirmations WHERE token = $1`,
+    [token]
+  )
+
+  if (!rows[0]) return c.redirect(`${CLIENT_URL}/sign-in?error=invalid_token`)
+  if (rows[0].confirmed_at) return c.redirect(`${CLIENT_URL}/dashboard?confirmed=1`)
+  if (new Date(rows[0].expires_at) < new Date()) return c.redirect(`${CLIENT_URL}/sign-in?error=token_expired`)
+
+  const userId = rows[0].user_id
+  await pool.query('UPDATE users SET email_confirmed = true WHERE id = $1', [userId])
+  await pool.query('UPDATE email_confirmations SET confirmed_at = now() WHERE token = $1', [token])
+
+  return c.redirect(`${CLIENT_URL}/dashboard?confirmed=1`)
+})
+
+// POST /api/auth/otp/send — send a 6-digit OTP to an email
+auth.post('/otp/send', async (c) => {
+  const body = await c.req.json()
+  const schema = z.object({ email: z.string().email() })
+  let parsed
+  try { parsed = schema.parse(body) } catch {
+    return c.json({ error: 'Valid email required' }, 400)
+  }
+
+  const { email } = parsed
+  const code = String(Math.floor(100000 + Math.random() * 900000))
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+
+  // Expire previous unused codes for this email
+  await pool.query(`UPDATE otp_codes SET used_at = now() WHERE email = $1 AND used_at IS NULL`, [email])
+
+  await pool.query(
+    `INSERT INTO otp_codes (email, code, expires_at) VALUES ($1, $2, $3)`,
+    [email, code, expiresAt]
+  )
+
+  try {
+    await sendOTPEmail(email, code)
+  } catch (err) {
+    console.error('OTP email send failed:', err)
+    // In dev without Resend key, log the code
+    if (!process.env.RESEND_API_KEY) console.log(`[DEV] OTP for ${email}: ${code}`)
+  }
+
+  return c.json({ ok: true })
+})
+
+// POST /api/auth/otp/verify — verify the OTP code and sign in / create account
+auth.post('/otp/verify', async (c) => {
+  const body = await c.req.json()
+  const schema = z.object({ email: z.string().email(), code: z.string().length(6) })
+  let parsed
+  try { parsed = schema.parse(body) } catch {
+    return c.json({ error: 'Invalid input' }, 400)
+  }
+
+  const { email, code } = parsed
+
+  const { rows } = await pool.query(
+    `SELECT id, expires_at FROM otp_codes WHERE email = $1 AND code = $2 AND used_at IS NULL ORDER BY expires_at DESC LIMIT 1`,
+    [email, code]
+  )
+
+  if (!rows[0]) return c.json({ error: 'Invalid or expired code.' }, 401)
+  if (new Date(rows[0].expires_at) < new Date()) return c.json({ error: 'Code expired. Request a new one.' }, 401)
+
+  // Mark code as used
+  await pool.query('UPDATE otp_codes SET used_at = now() WHERE id = $1', [rows[0].id])
+
+  // Upsert user
+  const { rows: existing } = await pool.query('SELECT id, name, email FROM users WHERE email = $1', [email])
+  let userId: string
+  let name: string
+
+  if (existing[0]) {
+    userId = existing[0].id
+    name = existing[0].name
+    // Mark email as confirmed since they verified via OTP
+    await pool.query('UPDATE users SET email_confirmed = true WHERE id = $1', [userId])
+  } else {
+    userId = uuidv4()
+    name = email.split('@')[0]
+    await pool.query(
+      `INSERT INTO users (id, name, email, email_confirmed) VALUES ($1, $2, $3, true)`,
+      [userId, name, email]
+    )
+    sendWelcomeEmail(email, name).catch(console.error)
+  }
+
+  const token = jwt.sign({ sub: userId, name, email }, JWT_SECRET, { expiresIn: '7d' })
+  return c.json({ token, userId, name, email })
 })
 
 // POST /api/auth/activate-license — redeem a license key to upgrade the user's plan
@@ -123,7 +237,6 @@ auth.post('/activate-license', async (c) => {
 
   const { key } = parsed
 
-  // Look up the key and check availability
   const { rows: keyRows } = await pool.query(
     `SELECT plan, max_activations, activations FROM license_keys WHERE key = $1`,
     [key]
@@ -135,18 +248,11 @@ auth.post('/activate-license', async (c) => {
 
   const newPlan = keyRows[0].plan
 
-  // Atomic update: increment activations and upgrade user
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
-    await client.query(
-      `UPDATE license_keys SET activations = activations + 1 WHERE key = $1`,
-      [key]
-    )
-    await client.query(
-      `UPDATE users SET plan = $1 WHERE id = $2`,
-      [newPlan, userId]
-    )
+    await client.query(`UPDATE license_keys SET activations = activations + 1 WHERE key = $1`, [key])
+    await client.query(`UPDATE users SET plan = $1 WHERE id = $2`, [newPlan, userId])
     await client.query('COMMIT')
   } catch (err) {
     await client.query('ROLLBACK')

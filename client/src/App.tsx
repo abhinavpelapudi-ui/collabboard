@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Board from './pages/Board'
 import Pricing from './pages/Pricing'
 import ActivateLicense from './pages/ActivateLicense'
+import OAuthCallback from './pages/OAuthCallback'
 
 // Global 401 interceptor — clears stale session and redirects to sign-in
 axios.interceptors.response.use(
@@ -28,6 +29,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/oauth-callback" element={<OAuthCallback />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/activate" element={<ProtectedRoute><ActivateLicense /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

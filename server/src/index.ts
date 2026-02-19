@@ -10,6 +10,7 @@ import membersRouter from './routes/members'
 import aiRouter from './routes/ai'
 import authRouter from './routes/auth'
 import adminRouter from './routes/admin'
+import oauthRouter from './routes/oauth'
 import { registerSocketHandlers } from './sockets/handlers'
 import { setIO } from './sockets/socketServer'
 import { decodeSocketToken } from './middleware/auth'
@@ -28,6 +29,7 @@ app.use('*', cors({ origin: CLIENT_URL, credentials: true }))
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))
 app.route('/api/auth', authRouter)
+app.route('/api/auth', oauthRouter)
 app.route('/api/boards', boardsRouter)
 app.route('/api/boards/:id/members', membersRouter)
 app.route('/api/ai', aiRouter)
