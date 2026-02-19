@@ -21,13 +21,16 @@ export default function Board() {
   const navigate = useNavigate()
   const socketRef = useSocket(boardId!, (newRole) => setRole(newRole))
   const { objects, addObject, removeObject, pushUndo, undo } = useBoardStore()
-  const { showAIPanel, selectedIds, setSelectedIds, clearSelection, isConnected } = useUIStore()
+  const { showAIPanel, selectedIds, setSelectedIds, clearSelection, isConnected, setConnected } = useUIStore()
 
   // Keep stable refs so the keydown handler always sees fresh state
   const selectedIdsRef = useRef(selectedIds)
   const objectsRef = useRef(objects)
   useEffect(() => { selectedIdsRef.current = selectedIds }, [selectedIds])
   useEffect(() => { objectsRef.current = objects }, [objects])
+
+  // Reset connected state on mount so the banner doesn't flash on navigation
+  useEffect(() => { setConnected(true) }, [])
 
   // Unread chat badge — count incoming chat messages while panel is closed
   useEffect(() => {
