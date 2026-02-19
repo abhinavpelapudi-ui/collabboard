@@ -1,0 +1,105 @@
+import { useRef, useState } from 'react'
+import axios from 'axios'
+import { getToken } from '../../hooks/useAuth'
+import { Workspace } from '@collabboard/shared'
+
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+
+interface Props {
+  boardId: string
+  currentWorkspaceId: string | null | undefined
+  workspaces: Workspace[]
+  onClose: () => void
+  onMoved: (newWorkspaceId: string | null) => void
+}
+
+export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, workspaces, onClose, onMoved }: Props) {
+  const [selected, setSelected] = useState<string | null>(currentWorkspaceId ?? null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  // Only show workspaces where user is owner or editor
+  const editable = workspaces.filter(w => w.role === 'owner' || w.role === 'editor')
+
+  async function handleMove() {
+    if (selected === (currentWorkspaceId ?? null)) { onClose(); return }
+    setSaving(true)
+    setError('')
+    try {
+      await axios.patch(
+        `${SERVER_URL}/api/boards/${boardId}`,
+        { workspaceId: selected },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      )
+      onMoved(selected)
+      onClose()
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to move board')
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+      onClick={e => { if (e.target === overlayRef.current) onClose() }}
+    >
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm shadow-2xl p-6">
+        <h2 className="text-white font-semibold mb-4">Move to workspace</h2>
+
+        <div className="space-y-2 mb-5">
+          {/* Personal option */}
+          <label className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-gray-800 border-gray-700 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-500/10">
+            <input
+              type="radio"
+              name="workspace"
+              value=""
+              checked={selected === null}
+              onChange={() => setSelected(null)}
+              className="accent-indigo-500"
+            />
+            <span className="text-sm text-gray-200">Personal (no workspace)</span>
+          </label>
+
+          {editable.map(ws => (
+            <label key={ws.id} className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-gray-800 border-gray-700 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-500/10">
+              <input
+                type="radio"
+                name="workspace"
+                value={ws.id}
+                checked={selected === ws.id}
+                onChange={() => setSelected(ws.id)}
+                className="accent-indigo-500"
+              />
+              <span className="text-sm text-gray-200 truncate">{ws.name}</span>
+            </label>
+          ))}
+
+          {editable.length === 0 && (
+            <p className="text-gray-500 text-sm text-center py-2">No workspaces available. Create one first.</p>
+          )}
+        </div>
+
+        {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+
+        <div className="flex gap-2">
+          <button
+            onClick={handleMove}
+            disabled={saving}
+            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white py-2 rounded-xl text-sm font-medium transition-colors"
+          >
+            {saving ? 'Moving…' : 'Move'}
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-xl text-sm font-medium transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -83,8 +83,29 @@ export interface Board {
   id: string
   title: string
   owner_id: string
+  workspace_id?: string | null
   created_at: string
   role?: BoardRole  // current user's role on this board
+}
+
+// ─── Workspace ───────────────────────────────────────────────────────────────
+
+export type WorkspaceRole = 'owner' | 'editor' | 'viewer'
+
+export interface WorkspaceMember {
+  user_id: string
+  name: string
+  email: string
+  role: WorkspaceRole
+}
+
+export interface Workspace {
+  id: string
+  name: string
+  owner_id: string
+  created_at: string
+  role: WorkspaceRole
+  member_count?: number
 }
 
 // ─── User ────────────────────────────────────────────────────────────────────

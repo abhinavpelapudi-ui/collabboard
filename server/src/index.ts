@@ -12,6 +12,7 @@ import authRouter from './routes/auth'
 import adminRouter from './routes/admin'
 import oauthRouter from './routes/oauth'
 import notificationsRouter from './routes/notifications'
+import workspacesRouter from './routes/workspaces'
 import { registerSocketHandlers } from './sockets/handlers'
 import { setIO } from './sockets/socketServer'
 import { decodeSocketToken } from './middleware/auth'
@@ -36,6 +37,7 @@ app.route('/api/boards/:id/members', membersRouter)
 app.route('/api/ai', aiRouter)
 app.route('/api/admin', adminRouter)
 app.route('/api/notifications', notificationsRouter)
+app.route('/api/workspaces', workspacesRouter)
 
 // ─── Start HTTP server ────────────────────────────────────────────────────────
 const server = serve({ fetch: app.fetch, port: PORT }, async () => {

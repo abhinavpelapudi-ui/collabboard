@@ -11,10 +11,14 @@ const boards = new Hono<{ Variables: AuthVariables }>()
 export async function getUserRole(boardId: string, userId: string): Promise<BoardRole | null> {
   const { rows } = await pool.query(
     `SELECT
-       CASE WHEN b.owner_id = $2 THEN 'owner' ELSE bm.role END AS role
+       CASE WHEN b.owner_id = $2 THEN 'owner'
+            WHEN bm.user_id IS NOT NULL THEN bm.role
+            ELSE wm.role END AS role
      FROM boards b
      LEFT JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = $2
-     WHERE b.id = $1 AND (b.owner_id = $2 OR bm.user_id = $2)`,
+     LEFT JOIN workspace_members wm ON wm.workspace_id = b.workspace_id AND wm.user_id = $2
+     WHERE b.id = $1
+       AND (b.owner_id = $2 OR bm.user_id = $2 OR wm.user_id = $2)`,
     [boardId, userId]
   )
   return (rows[0]?.role as BoardRole) ?? null
@@ -25,15 +29,20 @@ export async function getUserRole(boardId: string, userId: string): Promise<Boar
 boards.get('/', requireAuth, async (c) => {
   try {
     const { rows } = await pool.query(
-      `SELECT b.*,
-        (SELECT COUNT(*) FROM objects WHERE board_id = b.id) as object_count,
-        CASE WHEN b.owner_id = $1 THEN 'owner' ELSE bm.role END AS role
+      `SELECT DISTINCT ON (b.id) b.*,
+         (SELECT COUNT(*) FROM objects WHERE board_id = b.id) AS object_count,
+         CASE WHEN b.owner_id = $1 THEN 'owner'
+              WHEN bm.user_id IS NOT NULL THEN bm.role
+              ELSE wm.role END AS role
        FROM boards b
        LEFT JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = $1
-       WHERE b.owner_id = $1 OR bm.user_id = $1
-       ORDER BY b.created_at DESC`,
+       LEFT JOIN workspace_members wm ON wm.workspace_id = b.workspace_id AND wm.user_id = $1
+       WHERE b.owner_id = $1 OR bm.user_id = $1 OR wm.user_id = $1
+       ORDER BY b.id, b.created_at DESC`,
       [c.get('userId')]
     )
+    // Re-sort by created_at descending after DISTINCT ON
+    rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     return c.json(rows)
   } catch {
     return c.json({ error: 'Failed to fetch boards' }, 500)
@@ -46,8 +55,11 @@ const FREE_BOARD_LIMIT = 2
 
 boards.post('/', requireAuth, async (c) => {
   const body = await c.req.json()
-  const schema = z.object({ title: z.string().min(1).max(100).default('Untitled Board') })
-  const { title } = schema.parse(body)
+  const schema = z.object({
+    title: z.string().min(1).max(100).default('Untitled Board'),
+    workspaceId: z.string().uuid().optional().nullable(),
+  })
+  const { title, workspaceId } = schema.parse(body)
 
   try {
     await pool.query(
@@ -56,7 +68,7 @@ boards.post('/', requireAuth, async (c) => {
       [c.get('userId'), c.get('userName'), c.get('userEmail')]
     )
 
-    // Enforce free-plan board limit
+    // Enforce free-plan board limit (owned boards only)
     const { rows: limitRows } = await pool.query(
       `SELECT u.plan,
               (SELECT COUNT(*) FROM boards WHERE owner_id = $1) AS board_count
@@ -69,13 +81,24 @@ boards.post('/', requireAuth, async (c) => {
       return c.json({ error: 'Free plan limit reached. Upgrade to create more boards.', upgradeRequired: true }, 403)
     }
 
+    // If a workspace is specified, verify user has editor/owner access
+    if (workspaceId) {
+      const { rows: wsRows } = await pool.query(
+        `SELECT role FROM workspace_members WHERE workspace_id = $1 AND user_id = $2`,
+        [workspaceId, c.get('userId')]
+      )
+      const wsRole = wsRows[0]?.role
+      if (!wsRole || wsRole === 'viewer') {
+        return c.json({ error: 'Not authorized to create boards in this workspace' }, 403)
+      }
+    }
+
     const { rows } = await pool.query(
-      `INSERT INTO boards (title, owner_id) VALUES ($1, $2) RETURNING *`,
-      [title, c.get('userId')]
+      `INSERT INTO boards (title, owner_id, workspace_id) VALUES ($1, $2, $3) RETURNING *`,
+      [title, c.get('userId'), workspaceId ?? null]
     )
     const board = rows[0]
 
-    // Insert creator as owner in board_members
     await pool.query(
       `INSERT INTO board_members (board_id, user_id, role) VALUES ($1, $2, 'owner')
        ON CONFLICT (board_id, user_id) DO NOTHING`,
@@ -116,10 +139,14 @@ boards.get('/:id', requireAuth, async (c) => {
   try {
     const { rows } = await pool.query(
       `SELECT b.*,
-         CASE WHEN b.owner_id = $2 THEN 'owner' ELSE bm.role END AS role
+         CASE WHEN b.owner_id = $2 THEN 'owner'
+              WHEN bm.user_id IS NOT NULL THEN bm.role
+              ELSE wm.role END AS role
        FROM boards b
        LEFT JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = $2
-       WHERE b.id = $1 AND (b.owner_id = $2 OR bm.user_id = $2)`,
+       LEFT JOIN workspace_members wm ON wm.workspace_id = b.workspace_id AND wm.user_id = $2
+       WHERE b.id = $1
+         AND (b.owner_id = $2 OR bm.user_id = $2 OR wm.user_id = $2)`,
       [c.req.param('id'), c.get('userId')]
     )
     if (!rows[0]) return c.json({ error: 'Board not found' }, 404)
@@ -129,25 +156,43 @@ boards.get('/:id', requireAuth, async (c) => {
   }
 })
 
-// ─── PATCH /api/boards/:id — rename (owner or editor) ───────────────────────
+// ─── PATCH /api/boards/:id — rename or move to workspace (owner or editor) ───
 
 boards.patch('/:id', requireAuth, async (c) => {
   const body = await c.req.json()
-  const schema = z.object({ title: z.string().min(1).max(100) })
-  const { title } = schema.parse(body)
+  const schema = z.object({
+    title: z.string().min(1).max(100).optional(),
+    workspaceId: z.string().uuid().nullable().optional(),
+  })
+  const parsed = schema.parse(body)
 
   try {
     const role = await getUserRole(c.req.param('id'), c.get('userId'))
     if (!role || role === 'viewer') return c.json({ error: 'Not authorized' }, 403)
 
+    // Moving to a workspace requires owner role
+    if ('workspaceId' in parsed && role !== 'owner') {
+      return c.json({ error: 'Only the board owner can move boards to a workspace' }, 403)
+    }
+
+    const updates: string[] = []
+    const params: unknown[] = []
+    let i = 1
+
+    if (parsed.title !== undefined) { updates.push(`title = $${i++}`); params.push(parsed.title) }
+    if ('workspaceId' in parsed) { updates.push(`workspace_id = $${i++}`); params.push(parsed.workspaceId) }
+
+    if (!updates.length) return c.json({ error: 'Nothing to update' }, 400)
+
+    params.push(c.req.param('id'))
     const { rows } = await pool.query(
-      `UPDATE boards SET title = $1 WHERE id = $2 RETURNING *`,
-      [title, c.req.param('id')]
+      `UPDATE boards SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`,
+      params
     )
     if (!rows[0]) return c.json({ error: 'Board not found' }, 404)
     return c.json(rows[0])
   } catch {
-    return c.json({ error: 'Failed to rename board' }, 500)
+    return c.json({ error: 'Failed to update board' }, 500)
   }
 })
 

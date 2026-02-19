@@ -85,6 +85,24 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Workspaces (groups of boards with shared membership)
+CREATE TABLE IF NOT EXISTS workspaces (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       TEXT NOT NULL,
+  owner_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS workspace_members (
+  workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+  user_id      TEXT REFERENCES users(id) ON DELETE CASCADE,
+  role         TEXT NOT NULL DEFAULT 'editor',  -- 'owner' | 'editor' | 'viewer'
+  PRIMARY KEY  (workspace_id, user_id)
+);
+
+-- boards.workspace_id links boards to a workspace (NULL = Personal)
+-- ALTER TABLE boards ADD COLUMN IF NOT EXISTS workspace_id UUID REFERENCES workspaces(id) ON DELETE SET NULL;
+
 -- Board chat messages
 CREATE TABLE IF NOT EXISTS chat_messages (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -96,7 +114,10 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 
 -- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_chat_board      ON chat_messages(board_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_workspaces_owner ON workspaces(owner_id);
+CREATE INDEX IF NOT EXISTS idx_wsmembers_user   ON workspace_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_boards_workspace ON boards(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_chat_board       ON chat_messages(board_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_boards_owner     ON boards(owner_id);
 CREATE INDEX IF NOT EXISTS idx_objects_board    ON objects(board_id);
 CREATE INDEX IF NOT EXISTS idx_objects_zindex   ON objects(board_id, z_index);
