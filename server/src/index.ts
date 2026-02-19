@@ -4,7 +4,7 @@ import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
 import { Server } from 'socket.io'
 import dotenv from 'dotenv'
-import { testConnection } from './db'
+import { testConnection, runMigrations } from './db'
 import { rateLimit } from './middleware/rateLimit'
 import boardsRouter from './routes/boards'
 import membersRouter from './routes/members'
@@ -46,6 +46,7 @@ app.route('/api/workspaces', workspacesRouter)
 // ─── Start HTTP server ────────────────────────────────────────────────────────
 const server = serve({ fetch: app.fetch, port: PORT }, async () => {
   await testConnection()
+  await runMigrations()
   console.log(`🚀 Hono server running on port ${PORT}`)
 })
 

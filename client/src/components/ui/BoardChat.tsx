@@ -13,6 +13,7 @@ interface ChatMessage {
   userColor: string
   content: string
   createdAt: string
+  messageType?: 'chat' | 'audit'
 }
 
 interface Props {
@@ -58,6 +59,7 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
             userColor: colorFromId(m.user_id ?? m.user_name),
             content: m.content,
             createdAt: m.created_at,
+            messageType: m.message_type ?? 'chat',
           }))
         )
         setLoading(false)
@@ -68,7 +70,16 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
   // Listen for new real-time messages
   useEffect(() => {
     if (!socket) return
-    function onMessage(msg: ChatMessage) {
+    function onMessage(raw: any) {
+      const msg: ChatMessage = {
+        id: raw.id,
+        userId: raw.userId,
+        userName: raw.userName,
+        userColor: raw.userColor || colorFromId(raw.userId),
+        content: raw.content,
+        createdAt: raw.createdAt,
+        messageType: raw.messageType ?? 'chat',
+      }
       setMessages(prev => [...prev, msg])
     }
     socket.on('chat:message', onMessage)
@@ -154,6 +165,24 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
           </p>
         ) : (
           messages.map(msg => {
+            // ── Audit / system event row ──
+            if (msg.messageType === 'audit') {
+              return (
+                <div key={msg.id} className="flex items-center gap-2 py-0.5">
+                  <div className="flex-1 h-px bg-gray-800" />
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-800/70 border border-gray-700/50">
+                    <svg className="w-3 h-3 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-[10px] text-gray-400 italic whitespace-nowrap">{msg.content}</span>
+                    <span className="text-[9px] text-gray-600 ml-1">{timeLabel(msg.createdAt)}</span>
+                  </div>
+                  <div className="flex-1 h-px bg-gray-800" />
+                </div>
+              )
+            }
+
+            // ── Regular chat bubble ──
             const isMe = msg.userId === user?.userId
             const color = msg.userColor || colorFromId(msg.userId)
             return (

@@ -128,7 +128,7 @@ boards.get('/:id/chat', requireAuth, async (c) => {
 
   try {
     const { rows } = await pool.query(
-      `SELECT id, user_id, user_name, content, created_at
+      `SELECT id, user_id, user_name, content, message_type, created_at
        FROM chat_messages
        WHERE board_id = $1
        ORDER BY created_at DESC

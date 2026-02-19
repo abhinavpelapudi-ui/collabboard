@@ -13,3 +13,12 @@ export async function testConnection() {
   console.log('✅ Database connected')
   client.release()
 }
+
+export async function runMigrations() {
+  // Idempotent: safe to run on every startup
+  await pool.query(`
+    ALTER TABLE chat_messages
+    ADD COLUMN IF NOT EXISTS message_type TEXT NOT NULL DEFAULT 'chat'
+  `)
+  console.log('✅ DB migrations applied')
+}

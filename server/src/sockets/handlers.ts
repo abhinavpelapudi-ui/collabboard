@@ -8,6 +8,37 @@ import { z } from 'zod'
 // In-memory presence: boardId → Map<userId, PresenceUser & socketId>
 const presence = new Map<string, Map<string, PresenceUser & { socketId: string }>>()
 
+const TYPE_LABELS: Record<string, string> = {
+  sticky: 'sticky note', rect: 'rectangle', circle: 'circle',
+  frame: 'frame', text: 'text', connector: 'connector',
+}
+
+async function emitAudit(
+  io: Server,
+  socket: Socket & { userId: string; userName: string; userColor: string },
+  boardId: string,
+  content: string
+) {
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO chat_messages (board_id, user_id, user_name, content, message_type)
+       VALUES ($1, $2, $3, $4, 'audit') RETURNING id, created_at`,
+      [boardId, socket.userId, socket.userName, content]
+    )
+    io.to(`board:${boardId}`).emit('chat:message', {
+      id: rows[0].id,
+      userId: socket.userId,
+      userName: socket.userName,
+      userColor: socket.userColor,
+      content,
+      createdAt: rows[0].created_at,
+      messageType: 'audit',
+    })
+  } catch (err) {
+    console.error('Failed to emit audit log', err)
+  }
+}
+
 function getBoardUsers(boardId: string): PresenceUser[] {
   return Array.from(presence.get(boardId)?.values() ?? []).map(({ socketId, ...user }) => user)
 }
@@ -98,10 +129,15 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
     } catch (err) {
       console.error('Failed to persist object:create', err)
     }
+
+    // Audit log
+    const label = TYPE_LABELS[object.type] || object.type
+    await emitAudit(io, socket, boardId, `${socket.userName} added a ${label}`)
   })
 
   // ─── object:update ────────────────────────────────────────────────────────
   const updateQueue = new Map<string, ReturnType<typeof setTimeout>>()
+  const auditQueue = new Map<string, ReturnType<typeof setTimeout>>()
 
   socket.on('object:update', async ({ boardId, objectId, props }: { boardId: string; objectId: string; props: Partial<BoardObject> }) => {
     const role = getCachedRole(socket.id, boardId)
@@ -129,6 +165,24 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
         }
       }, 500)
     )
+
+    // Audit: text or color change (debounced 2s to avoid flooding on keystrokes)
+    const isTextChange = 'text' in props
+    const isColorChange = ('color' in props || 'fill' in props) && !isTextChange
+    if (isTextChange || isColorChange) {
+      if (auditQueue.has(objectId)) clearTimeout(auditQueue.get(objectId)!)
+      auditQueue.set(objectId, setTimeout(async () => {
+        auditQueue.delete(objectId)
+        try {
+          const { rows } = await pool.query(
+            `SELECT type FROM objects WHERE id = $1`, [objectId]
+          )
+          const typeLabel = TYPE_LABELS[rows[0]?.type] || 'object'
+          const action = isTextChange ? 'edited text on' : 'changed color of'
+          await emitAudit(io, socket, boardId, `${socket.userName} ${action} a ${typeLabel}`)
+        } catch {}
+      }, 2000))
+    }
   })
 
   // ─── object:delete ────────────────────────────────────────────────────────
@@ -142,7 +196,12 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
     socket.to(`board:${boardId}`).emit('object:delete', { objectId })
 
     try {
-      await pool.query(`DELETE FROM objects WHERE id = $1 AND board_id = $2`, [objectId, boardId])
+      const { rows } = await pool.query(
+        `DELETE FROM objects WHERE id = $1 AND board_id = $2 RETURNING type`,
+        [objectId, boardId]
+      )
+      const label = TYPE_LABELS[rows[0]?.type] || 'object'
+      await emitAudit(io, socket, boardId, `${socket.userName} removed a ${label}`)
     } catch (err) {
       console.error('Failed to persist object:delete', err)
     }
