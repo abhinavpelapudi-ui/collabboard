@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Text, Group, Rect } from 'react-konva'
 import Konva from 'konva'
 import type { Socket } from 'socket.io-client'
@@ -12,9 +13,12 @@ interface Props {
   isSelected: boolean
 }
 
-export default function TextShape({ object, boardId, socketRef, isSelected }: Props) {
-  const { updateObject, pushUndo } = useBoardStore()
-  const { setSelectedObjectId, activeTool, toggleSelectedId, selectedIds } = useUIStore()
+function TextShape({ object, boardId, socketRef, isSelected }: Props) {
+  const updateObject = useBoardStore(s => s.updateObject)
+  const pushUndo = useBoardStore(s => s.pushUndo)
+  const setSelectedObjectId = useUIStore(s => s.setSelectedObjectId)
+  const activeTool = useUIStore(s => s.activeTool)
+  const toggleSelectedId = useUIStore(s => s.toggleSelectedId)
 
   function handleClick(e: Konva.KonvaEventObject<MouseEvent>) {
     if (activeTool !== 'select') return
@@ -73,8 +77,6 @@ export default function TextShape({ object, boardId, socketRef, isSelected }: Pr
     socketRef.current?.emit('object:update', { boardId, objectId: object.id, props })
   }
 
-  const isMultiSelected = selectedIds.includes(object.id)
-
   return (
     <Group
       id={object.id}
@@ -86,7 +88,7 @@ export default function TextShape({ object, boardId, socketRef, isSelected }: Pr
       onDblClick={handleDblClick}
       onDragEnd={handleDragEnd}
     >
-      {(isSelected || isMultiSelected) && (
+      {isSelected && (
         <Rect
           x={-4} y={-4}
           width={Math.max(120, object.width) + 8}
@@ -106,3 +108,5 @@ export default function TextShape({ object, boardId, socketRef, isSelected }: Pr
     </Group>
   )
 }
+
+export default memo(TextShape)

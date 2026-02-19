@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Group, Rect, Text } from 'react-konva'
 import Konva from 'konva'
 import type { Socket } from 'socket.io-client'
@@ -12,9 +13,11 @@ interface Props {
   isSelected: boolean
 }
 
-export default function StickyNote({ object, boardId, socketRef, isSelected }: Props) {
-  const { updateObject, removeObject, pushUndo } = useBoardStore()
-  const { setSelectedObjectId } = useUIStore()
+function StickyNote({ object, boardId, socketRef, isSelected }: Props) {
+  const updateObject = useBoardStore(s => s.updateObject)
+  const removeObject = useBoardStore(s => s.removeObject)
+  const pushUndo = useBoardStore(s => s.pushUndo)
+  const setSelectedObjectId = useUIStore(s => s.setSelectedObjectId)
 
   function onDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
     const props = { x: e.target.x(), y: e.target.y() }
@@ -121,3 +124,5 @@ export default function StickyNote({ object, boardId, socketRef, isSelected }: P
     </Group>
   )
 }
+
+export default memo(StickyNote)

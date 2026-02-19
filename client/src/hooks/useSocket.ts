@@ -4,6 +4,7 @@ import { getToken } from './useAuth'
 import { useBoardStore } from '../stores/boardStore'
 import { useCursorStore } from '../stores/cursorStore'
 import { usePresenceStore } from '../stores/presenceStore'
+import { useUIStore } from '../stores/uiStore'
 import { BoardRole } from '@collabboard/shared'
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
@@ -16,16 +17,30 @@ export function useSocket(boardId: string, onRoleChanged?: (role: BoardRole) => 
   const { setObjects, clearObjects, addObject, updateObject, removeObject } = useBoardStore()
   const { updateCursor, removeCursor, clearCursors } = useCursorStore()
   const { setUsers } = usePresenceStore()
+  const setConnected = useUIStore(s => s.setConnected)
 
   useEffect(() => {
     if (!boardId) return
     const token = getToken()
     if (!token) return
 
-    const socket = io(SERVER_URL, { auth: { token }, transports: ['websocket'] })
+    const socket = io(SERVER_URL, {
+      auth: { token },
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 10,
+    })
     socketRef.current = socket
 
-    socket.on('connect', () => { console.log('✅ Socket connected'); socket.emit('board:join', { boardId }) })
+    socket.on('connect', () => {
+      setConnected(true)
+      socket.emit('board:join', { boardId })
+    })
+    socket.on('disconnect', () => { setConnected(false); clearCursors() })
+    socket.on('connect_error', () => setConnected(false))
+    socket.on('reconnect', () => { setConnected(true); socket.emit('board:join', { boardId }) })
     socket.on('board:state', ({ objects }) => setObjects(objects))
     socket.on('cursor:move', (cursor) => updateCursor(cursor))
     socket.on('cursor:leave', ({ userId }) => removeCursor(userId))
@@ -34,7 +49,6 @@ export function useSocket(boardId: string, onRoleChanged?: (role: BoardRole) => 
     socket.on('object:delete', ({ objectId }) => removeObject(objectId))
     socket.on('presence:update', ({ users }) => setUsers(users))
     socket.on('role:changed', ({ role }) => onRoleChangedRef.current?.(role))
-    socket.on('disconnect', () => { console.log('❌ Disconnected'); clearCursors() })
 
     return () => {
       socket.emit('board:leave', { boardId })

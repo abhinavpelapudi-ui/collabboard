@@ -21,7 +21,7 @@ export default function Board() {
   const navigate = useNavigate()
   const socketRef = useSocket(boardId!, (newRole) => setRole(newRole))
   const { objects, addObject, removeObject, pushUndo, undo } = useBoardStore()
-  const { showAIPanel, selectedIds, setSelectedIds, clearSelection } = useUIStore()
+  const { showAIPanel, selectedIds, setSelectedIds, clearSelection, isConnected } = useUIStore()
 
   // Keep stable refs so the keydown handler always sees fresh state
   const selectedIdsRef = useRef(selectedIds)
@@ -175,6 +175,14 @@ export default function Board() {
           </button>
         </div>
       </header>
+
+      {/* Disconnected banner */}
+      {!isConnected && (
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-red-900/90 border border-red-700 text-red-200 text-xs px-4 py-2 rounded-xl shadow-lg pointer-events-none">
+          <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse flex-shrink-0" />
+          Connection lost — reconnecting…
+        </div>
+      )}
 
       {/* Canvas */}
       <BoardCanvas boardId={boardId} socketRef={socketRef} />

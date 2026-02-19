@@ -1,8 +1,9 @@
+import { memo } from 'react'
 import { Group, Circle, Text } from 'react-konva'
 import { useCursorStore } from '../../stores/cursorStore'
 
-export default function CursorsLayer() {
-  const { cursors } = useCursorStore()
+function CursorsLayer() {
+  const cursors = useCursorStore(s => s.cursors)
 
   return (
     <>
@@ -24,3 +25,5 @@ export default function CursorsLayer() {
     </>
   )
 }
+
+export default memo(CursorsLayer)

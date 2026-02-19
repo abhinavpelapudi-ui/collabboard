@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { Transformer } from 'react-konva'
 import Konva from 'konva'
 import type { Socket } from 'socket.io-client'
@@ -10,9 +10,9 @@ interface Props {
   socketRef: React.MutableRefObject<Socket | null>
 }
 
-export default function SelectionTransformer({ selectedIds, boardId, socketRef }: Props) {
+function SelectionTransformer({ selectedIds, boardId, socketRef }: Props) {
   const transformerRef = useRef<Konva.Transformer>(null)
-  const { updateObject } = useBoardStore()
+  const updateObject = useBoardStore(s => s.updateObject)
 
   useEffect(() => {
     if (!transformerRef.current) return
@@ -56,3 +56,5 @@ export default function SelectionTransformer({ selectedIds, boardId, socketRef }
     />
   )
 }
+
+export default memo(SelectionTransformer)

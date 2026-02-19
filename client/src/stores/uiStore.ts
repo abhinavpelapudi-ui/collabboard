@@ -9,6 +9,7 @@ interface UIStore {
   activeColor: string
   showAIPanel: boolean
   fitRequest: number
+  isConnected: boolean
 
   setActiveTool: (tool: Tool) => void
   setSelectedObjectId: (id: string | null) => void
@@ -18,6 +19,7 @@ interface UIStore {
   setActiveColor: (color: string) => void
   toggleAIPanel: () => void
   triggerFit: () => void
+  setConnected: (v: boolean) => void
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -27,6 +29,7 @@ export const useUIStore = create<UIStore>((set) => ({
   activeColor: '#FEF08A',
   showAIPanel: false,
   fitRequest: 0,
+  isConnected: true,
 
   setActiveTool: (activeTool) => set({ activeTool, selectedIds: [], selectedObjectId: null }),
   setSelectedObjectId: (id) => set({ selectedObjectId: id, selectedIds: id ? [id] : [] }),
@@ -40,4 +43,5 @@ export const useUIStore = create<UIStore>((set) => ({
   setActiveColor: (activeColor) => set({ activeColor }),
   toggleAIPanel: () => set(s => ({ showAIPanel: !s.showAIPanel })),
   triggerFit: () => set(s => ({ fitRequest: s.fitRequest + 1 })),
+  setConnected: (v) => set({ isConnected: v }),
 }))

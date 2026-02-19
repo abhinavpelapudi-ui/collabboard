@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import Konva from 'konva'
 import { Group, Rect, Text } from 'react-konva'
 import type { Socket } from 'socket.io-client'
@@ -13,9 +14,10 @@ interface Props {
   isSelected: boolean
 }
 
-export default function RectShape({ object, boardId, socketRef, isSelected }: Props) {
-  const { updateObject, pushUndo } = useBoardStore()
-  const { setSelectedObjectId } = useUIStore()
+function RectShape({ object, boardId, socketRef, isSelected }: Props) {
+  const updateObject = useBoardStore(s => s.updateObject)
+  const pushUndo = useBoardStore(s => s.pushUndo)
+  const setSelectedObjectId = useUIStore(s => s.setSelectedObjectId)
 
   function onDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
     const props = { x: e.target.x(), y: e.target.y() }
@@ -90,3 +92,5 @@ export default function RectShape({ object, boardId, socketRef, isSelected }: Pr
     </Group>
   )
 }
+
+export default memo(RectShape)

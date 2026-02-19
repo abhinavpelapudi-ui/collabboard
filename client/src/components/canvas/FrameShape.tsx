@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Group, Rect, Text } from 'react-konva'
 import Konva from 'konva'
 import type { Socket } from 'socket.io-client'
@@ -15,9 +16,10 @@ interface Props {
 
 const LABEL_HEIGHT = 28
 
-export default function FrameShape({ object, boardId, socketRef, isSelected }: Props) {
-  const { updateObject, pushUndo } = useBoardStore()
-  const { setSelectedObjectId } = useUIStore()
+function FrameShape({ object, boardId, socketRef, isSelected }: Props) {
+  const updateObject = useBoardStore(s => s.updateObject)
+  const pushUndo = useBoardStore(s => s.pushUndo)
+  const setSelectedObjectId = useUIStore(s => s.setSelectedObjectId)
 
   function onDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
     const props = { x: e.target.x(), y: e.target.y() }
@@ -89,3 +91,5 @@ export default function FrameShape({ object, boardId, socketRef, isSelected }: P
     </Group>
   )
 }
+
+export default memo(FrameShape)

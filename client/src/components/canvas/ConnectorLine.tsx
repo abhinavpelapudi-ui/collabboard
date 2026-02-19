@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Arrow } from 'react-konva'
 import type { Socket } from 'socket.io-client'
 import { ConnectorObject } from '@collabboard/shared'
@@ -10,7 +11,7 @@ interface Props {
   isSelected: boolean
 }
 
-export default function ConnectorLine({ object, isSelected }: Props) {
+function ConnectorLine({ object, isSelected }: Props) {
   const objects = useBoardStore(s => s.objects)
 
   const from = objects.get(object.from_id)
@@ -36,3 +37,5 @@ export default function ConnectorLine({ object, isSelected }: Props) {
     />
   )
 }
+
+export default memo(ConnectorLine)
