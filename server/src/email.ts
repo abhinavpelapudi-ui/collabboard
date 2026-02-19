@@ -1,13 +1,11 @@
 import { Resend } from 'resend'
 
-// Lazy client — only instantiated when RESEND_API_KEY is present
 function getResend() {
   if (!process.env.RESEND_API_KEY) return null
   return new Resend(process.env.RESEND_API_KEY)
 }
 
-// Use EMAIL_FROM env var if set (requires verified domain on Resend).
-// Falls back to Resend's built-in test sender which works without domain verification.
+// onboarding@resend.dev works without a verified domain and sends to any email address
 const FROM = process.env.EMAIL_FROM || 'CollabBoard <onboarding@resend.dev>'
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'
 
@@ -20,7 +18,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
     subject: 'Welcome to CollabBoard!',
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:auto;">
-        <h2 style="color:#6366f1;">Welcome, ${name}! 🎉</h2>
+        <h2 style="color:#6366f1;">Welcome, ${name}!</h2>
         <p>Your CollabBoard account is ready. Start collaborating on unlimited ideas with your team.</p>
         <a href="${CLIENT_URL}/dashboard"
            style="display:inline-block;background:#6366f1;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">
@@ -58,7 +56,7 @@ export async function sendEmailConfirmation(to: string, name: string, token: str
 
 export async function sendOTPEmail(to: string, code: string) {
   const resend = getResend()
-  if (!resend) return
+  if (!resend) throw new Error('RESEND_API_KEY not configured')
   await resend.emails.send({
     from: FROM,
     to,
