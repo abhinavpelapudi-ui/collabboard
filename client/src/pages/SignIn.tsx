@@ -10,20 +10,22 @@ export default function SignIn() {
   const [searchParams] = useSearchParams()
   const oauthError = searchParams.get('error')
 
-  const [otpStep, setOtpStep] = useState<'email' | 'code'>('email')
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [otpStep, setOtpStep] = useState<'form' | 'code'>('form')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(oauthError ? 'OAuth sign-in failed. Please try another method.' : '')
   const [info, setInfo] = useState('')
 
-  async function handleOTP(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setInfo('')
     setLoading(true)
     try {
-      if (otpStep === 'email') {
+      if (otpStep === 'form') {
         await axios.post(`${SERVER_URL}/api/auth/otp/send`, { email: email.trim() })
         setOtpStep('code')
         setInfo(`A 6-digit code was sent to ${email.trim()}`)
@@ -31,6 +33,7 @@ export default function SignIn() {
         const { data } = await axios.post(`${SERVER_URL}/api/auth/otp/verify`, {
           email: email.trim(),
           code: otpCode.trim(),
+          ...(mode === 'signup' && name.trim() ? { name: name.trim() } : {}),
         })
         saveAuth(data.token, { userId: data.userId, name: data.name, email: data.email })
         navigate('/dashboard')
@@ -42,11 +45,37 @@ export default function SignIn() {
     }
   }
 
+  function switchMode(next: 'signin' | 'signup') {
+    setMode(next)
+    setOtpStep('form')
+    setName('')
+    setEmail('')
+    setOtpCode('')
+    setError('')
+    setInfo('')
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-8">
-        <h1 className="text-2xl font-bold text-white mb-1">CollabBoard</h1>
-        <p className="text-gray-400 text-sm mb-6">Sign in or create an account</p>
+
+        <h1 className="text-2xl font-bold text-white mb-4">CollabBoard</h1>
+
+        {/* ── Sign in / Sign up toggle ── */}
+        <div className="flex bg-gray-800 rounded-xl p-1 mb-6">
+          <button
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'signin' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'}`}
+            onClick={() => switchMode('signin')}
+          >
+            Sign in
+          </button>
+          <button
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'signup' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-gray-300'}`}
+            onClick={() => switchMode('signup')}
+          >
+            Sign up
+          </button>
+        </div>
 
         {/* ── Social login buttons ── */}
         <div className="space-y-2 mb-5">
@@ -60,7 +89,7 @@ export default function SignIn() {
               <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
               <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
             </svg>
-            Continue with Google
+            {mode === 'signup' ? 'Sign up' : 'Sign in'} with Google
           </a>
           <a
             href={`${SERVER_URL}/api/auth/github`}
@@ -69,19 +98,32 @@ export default function SignIn() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
             </svg>
-            Continue with GitHub
+            {mode === 'signup' ? 'Sign up' : 'Sign in'} with GitHub
           </a>
         </div>
 
         <div className="flex items-center gap-3 mb-5">
           <div className="flex-1 h-px bg-gray-800" />
-          <span className="text-gray-600 text-xs">or sign in with email code</span>
+          <span className="text-gray-600 text-xs">or use email code</span>
           <div className="flex-1 h-px bg-gray-800" />
         </div>
 
         {/* ── OTP form ── */}
-        <form onSubmit={handleOTP} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {mode === 'signup' && otpStep === 'form' && (
+            <input
+              autoFocus
+              className="w-full bg-gray-800 text-white px-4 py-3 rounded-xl border border-gray-700 focus:border-indigo-500 outline-none"
+              placeholder="Your name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              disabled={loading}
+              required
+            />
+          )}
+
           <input
+            autoFocus={mode === 'signin' && otpStep === 'form'}
             type="email"
             className="w-full bg-gray-800 text-white px-4 py-3 rounded-xl border border-gray-700 focus:border-indigo-500 outline-none"
             placeholder="Email address"
@@ -115,7 +157,7 @@ export default function SignIn() {
             className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white py-3 rounded-xl font-medium transition-colors"
           >
             {loading ? 'Please wait…'
-              : otpStep === 'email' ? 'Send code →'
+              : otpStep === 'form' ? 'Send code →'
               : 'Verify & sign in →'}
           </button>
 
@@ -123,7 +165,7 @@ export default function SignIn() {
             <button
               type="button"
               className="w-full text-gray-500 text-sm hover:text-gray-300 transition-colors"
-              onClick={() => { setOtpStep('email'); setOtpCode(''); setInfo(''); setError('') }}
+              onClick={() => { setOtpStep('form'); setOtpCode(''); setInfo(''); setError('') }}
             >
               ← Use a different email
             </button>

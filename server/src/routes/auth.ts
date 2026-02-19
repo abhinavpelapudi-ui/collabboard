@@ -170,13 +170,17 @@ auth.post('/otp/send', async (c) => {
 // POST /api/auth/otp/verify — verify the OTP code and sign in / create account
 auth.post('/otp/verify', async (c) => {
   const body = await c.req.json()
-  const schema = z.object({ email: z.string().email(), code: z.string().length(6) })
+  const schema = z.object({
+    email: z.string().email(),
+    code: z.string().length(6),
+    name: z.string().min(1).max(50).optional(),
+  })
   let parsed
   try { parsed = schema.parse(body) } catch {
     return c.json({ error: 'Invalid input' }, 400)
   }
 
-  const { email, code } = parsed
+  const { email, code, name: providedName } = parsed
 
   const { rows } = await pool.query(
     `SELECT id, expires_at FROM otp_codes WHERE email = $1 AND code = $2 AND used_at IS NULL ORDER BY expires_at DESC LIMIT 1`,
@@ -201,7 +205,7 @@ auth.post('/otp/verify', async (c) => {
     await pool.query('UPDATE users SET email_confirmed = true WHERE id = $1', [userId])
   } else {
     userId = uuidv4()
-    name = email.split('@')[0]
+    name = providedName || email.split('@')[0]
     await pool.query(
       `INSERT INTO users (id, name, email, email_confirmed) VALUES ($1, $2, $3, true)`,
       [userId, name, email]
