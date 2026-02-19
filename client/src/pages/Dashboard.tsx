@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { Board, BoardRole } from '@collabboard/shared'
-import { getToken, getUser, clearAuth } from '../hooks/useAuth'
+import { getToken, getUser } from '../hooks/useAuth'
 import UpgradeModal from '../components/ui/UpgradeModal'
+import UserMenu from '../components/ui/UserMenu'
 
 const FREE_BOARD_LIMIT = 2
 
@@ -61,11 +62,6 @@ export default function Dashboard() {
     setBoards(prev => prev.filter(b => b.id !== id))
   }
 
-  function signOut() {
-    clearAuth()
-    navigate('/sign-in')
-  }
-
   useEffect(() => { fetchBoards() }, [])
 
   return (
@@ -83,13 +79,7 @@ export default function Dashboard() {
               )}
             </span>
           )}
-          <button onClick={() => navigate('/pricing')} className="text-xs text-gray-400 hover:text-white">
-            Pricing
-          </button>
-          <span className="text-sm text-gray-400">{user?.name}</span>
-          <button onClick={signOut} className="text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700">
-            Sign out
-          </button>
+          {user && <UserMenu user={user} />}
         </div>
       </header>
 
