@@ -162,10 +162,14 @@ auth.post('/otp/send', async (c) => {
     return c.json({ ok: true })
   }
 
+  // Always log the code server-side so it can be retrieved from Railway logs
+  console.log(`[otp] Code for ${email}: ${code}  (expires in 10 min)`)
+
   try {
     await sendOTPEmail(email, code)
+    console.log(`[otp] Email sent successfully to ${email}`)
   } catch (err: any) {
-    console.error('OTP email send failed:', err)
+    console.error('[otp] Email send failed:', err?.message ?? err)
     const detail = err?.message || 'Email delivery failed'
     return c.json({ error: `Could not send code: ${detail}` }, 503)
   }

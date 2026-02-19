@@ -57,7 +57,10 @@ export async function sendEmailConfirmation(to: string, name: string, token: str
 export async function sendOTPEmail(to: string, code: string) {
   const resend = getResend()
   if (!resend) throw new Error('RESEND_API_KEY not configured')
-  await resend.emails.send({
+
+  console.log(`[email] Sending OTP to: ${to}  from: ${FROM}`)
+
+  const result = await resend.emails.send({
     from: FROM,
     to,
     subject: `${code} — your CollabBoard sign-in code`,
@@ -70,4 +73,10 @@ export async function sendOTPEmail(to: string, code: string) {
       </div>
     `,
   })
+
+  console.log(`[email] Resend response:`, JSON.stringify(result))
+
+  if (result.error) {
+    throw new Error(`Resend error: ${result.error.message ?? JSON.stringify(result.error)}`)
+  }
 }
