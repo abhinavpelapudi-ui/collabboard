@@ -5,6 +5,7 @@ import type { Socket } from 'socket.io-client'
 import { StickyObject } from '@collabboard/shared'
 import { useBoardStore } from '../../stores/boardStore'
 import { useUIStore } from '../../stores/uiStore'
+import { openTextEditor } from './useTextEdit'
 
 interface Props {
   object: StickyObject
@@ -26,61 +27,25 @@ function StickyNote({ object, boardId, socketRef, isSelected }: Props) {
   }
 
   function onDblClick() {
-    const konvaStage = Konva.stages[0]
-    if (!konvaStage) return
-
-    const stageContainer = konvaStage.container()
-    if (!stageContainer) return
-
-    const stageRect = stageContainer.getBoundingClientRect()
-    const scale = konvaStage.scaleX()
-    const stagePos = konvaStage.position()
-
-    const left = stageRect.left + stagePos.x + object.x * scale
-    const top = stageRect.top + stagePos.y + object.y * scale
-
-    const textarea = document.createElement('textarea')
-    Object.assign(textarea.style, {
-      position: 'fixed',
-      left: `${left}px`,
-      top: `${top}px`,
-      width: `${object.width * scale}px`,
-      height: `${object.height * scale}px`,
-      fontSize: `${object.font_size * scale}px`,
-      border: '2px solid #6366f1',
-      padding: '8px',
-      margin: '0',
-      overflow: 'hidden',
-      background: object.color,
-      outline: 'none',
-      resize: 'none',
-      fontFamily: 'inherit',
-      zIndex: '1000',
-      borderRadius: '4px',
-      color: '#1a1a1a',
-    })
-    textarea.value = object.text
-    document.body.appendChild(textarea)
-    textarea.focus()
-
-    function finish() {
-      const newText = textarea.value
-      document.body.removeChild(textarea)
-      if (newText === object.text) return
-      pushUndo()
-      const props = { text: newText }
-      updateObject(object.id, props)
-      socketRef.current?.emit('object:update', { boardId, objectId: object.id, props })
-    }
-
-    textarea.addEventListener('input', () => {
-      const text = textarea.value
-      updateObject(object.id, { text })
-      socketRef.current?.emit('object:update', { boardId, objectId: object.id, props: { text } })
-    })
-    textarea.addEventListener('blur', finish)
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') finish()
+    openTextEditor({
+      x: object.x,
+      y: object.y,
+      width: object.width,
+      height: object.height,
+      fontSize: object.font_size,
+      fill: object.color,
+      currentText: object.text ?? '',
+      onInput: (text) => {
+        updateObject(object.id, { text })
+        socketRef.current?.emit('object:update', { boardId, objectId: object.id, props: { text } })
+      },
+      onCommit: (newText) => {
+        if (newText === (object.text ?? '')) return
+        pushUndo()
+        const props = { text: newText }
+        updateObject(object.id, props)
+        socketRef.current?.emit('object:update', { boardId, objectId: object.id, props })
+      },
     })
   }
 
