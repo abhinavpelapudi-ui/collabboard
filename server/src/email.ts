@@ -6,7 +6,9 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY)
 }
 
-const FROM = process.env.EMAIL_FROM || 'CollabBoard <noreply@collabboard.app>'
+// Use EMAIL_FROM env var if set (requires verified domain on Resend).
+// Falls back to Resend's built-in test sender which works without domain verification.
+const FROM = process.env.EMAIL_FROM || 'CollabBoard <onboarding@resend.dev>'
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'
 
 export async function sendWelcomeEmail(to: string, name: string) {

@@ -156,12 +156,18 @@ auth.post('/otp/send', async (c) => {
     [email, code, expiresAt]
   )
 
+  if (!process.env.RESEND_API_KEY) {
+    // Dev mode — log code to server console instead of sending email
+    console.log(`[DEV] OTP for ${email}: ${code}`)
+    return c.json({ ok: true })
+  }
+
   try {
     await sendOTPEmail(email, code)
-  } catch (err) {
+  } catch (err: any) {
     console.error('OTP email send failed:', err)
-    // In dev without Resend key, log the code
-    if (!process.env.RESEND_API_KEY) console.log(`[DEV] OTP for ${email}: ${code}`)
+    const detail = err?.message || 'Email delivery failed'
+    return c.json({ error: `Could not send code: ${detail}` }, 503)
   }
 
   return c.json({ ok: true })
