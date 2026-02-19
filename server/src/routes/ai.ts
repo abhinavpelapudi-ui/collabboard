@@ -173,6 +173,33 @@ const tools: Anthropic.Tool[] = [
       required: ['objectId'],
     },
   },
+  {
+    name: 'createConnector',
+    description: 'Create a connector arrow between two existing objects',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        fromId: { type: 'string', description: 'Source object id' },
+        toId: { type: 'string', description: 'Target object id' },
+        style: { type: 'string', enum: ['solid', 'dashed'], description: 'Line style' },
+        color: { type: 'string', description: 'Connector color hex' },
+      },
+      required: ['fromId', 'toId'],
+    },
+  },
+  {
+    name: 'resizeObject',
+    description: 'Resize an object to new dimensions',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        objectId: { type: 'string' },
+        width: { type: 'number', description: 'New width in pixels' },
+        height: { type: 'number', description: 'New height in pixels' },
+      },
+      required: ['objectId', 'width', 'height'],
+    },
+  },
 ]
 
 ai.post('/command', requireAuth, async (c) => {
@@ -339,6 +366,36 @@ ai.post('/command', requireAuth, async (c) => {
         deletedObjectIds.push(input.objectId as string)
         actions.push(`Deleted ${input.objectId}`)
         return `Deleted ${input.objectId}`
+      }
+
+      case 'createConnector': {
+        const obj: any = {
+          id: newId(), board_id: boardId, type: 'connector',
+          x: 0, y: 0, width: 0, height: 0,
+          rotation: 0, z_index: boardState.length,
+          created_by: userId, updated_at: now,
+          from_id: input.fromId, to_id: input.toId,
+          style: (input.style as string) || 'solid',
+          color: (input.color as string) || '#6366f1',
+        }
+        await pool.query(
+          `INSERT INTO objects (id, board_id, type, props, z_index, created_by) VALUES ($1,$2,$3,$4,$5,$6)`,
+          [obj.id, boardId, 'connector', JSON.stringify(obj), obj.z_index, userId]
+        )
+        createdObjects.push(obj)
+        actions.push(`Created connector from ${input.fromId} to ${input.toId}`)
+        return `Created connector with id ${obj.id}`
+      }
+
+      case 'resizeObject': {
+        const props = { width: input.width as number, height: input.height as number }
+        await pool.query(
+          `UPDATE objects SET props = props || $1::jsonb, updated_at = now() WHERE id = $2 AND board_id = $3`,
+          [JSON.stringify(props), input.objectId, boardId]
+        )
+        updatedObjects.push({ objectId: input.objectId as string, props })
+        actions.push(`Resized object ${input.objectId} to ${input.width}×${input.height}`)
+        return `Resized object ${input.objectId}`
       }
 
       default:

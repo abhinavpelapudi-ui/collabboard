@@ -5,6 +5,7 @@ import { serve } from '@hono/node-server'
 import { Server } from 'socket.io'
 import dotenv from 'dotenv'
 import { testConnection } from './db'
+import { rateLimit } from './middleware/rateLimit'
 import boardsRouter from './routes/boards'
 import membersRouter from './routes/members'
 import aiRouter from './routes/ai'
@@ -27,6 +28,9 @@ const app = new Hono()
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use('*', logger())
 app.use('*', cors({ origin: CLIENT_URL, credentials: true }))
+// Global rate limit: 200 req/min per IP; tighter 30/min on auth routes
+app.use('/api/*', rateLimit(200, 60_000))
+app.use('/api/auth/*', rateLimit(30, 60_000))
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))

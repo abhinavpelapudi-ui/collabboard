@@ -3,62 +3,47 @@ import { Transformer } from 'react-konva'
 import Konva from 'konva'
 import type { Socket } from 'socket.io-client'
 import { useBoardStore } from '../../stores/boardStore'
-import { useUIStore } from '../../stores/uiStore'
 
 interface Props {
-  selectedObjectId: string
+  selectedIds: string[]
   boardId: string
   socketRef: React.MutableRefObject<Socket | null>
 }
 
-export default function SelectionTransformer({ selectedObjectId, boardId, socketRef }: Props) {
+export default function SelectionTransformer({ selectedIds, boardId, socketRef }: Props) {
   const transformerRef = useRef<Konva.Transformer>(null)
-  const { updateObject, removeObject, pushUndo } = useBoardStore()
-  const { setSelectedObjectId } = useUIStore()
+  const { updateObject } = useBoardStore()
 
   useEffect(() => {
     if (!transformerRef.current) return
     const stage = transformerRef.current.getStage()
     if (!stage) return
-    const node = stage.findOne(`#${selectedObjectId}`)
-    if (node) {
-      transformerRef.current.nodes([node])
-      transformerRef.current.getLayer()?.batchDraw()
-    }
-  }, [selectedObjectId])
+    const nodes = selectedIds
+      .map(id => stage.findOne(`#${id}`))
+      .filter((n): n is Konva.Node => !!n)
+    transformerRef.current.nodes(nodes)
+    transformerRef.current.getLayer()?.batchDraw()
+  }, [selectedIds])
 
-  // Delete key on transformer
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObjectId) {
-        const focused = document.activeElement
-        // Only delete when canvas or body has focus — not any UI element
-        const onCanvas = !focused || focused === document.body || focused.tagName === 'CANVAS'
-        if (!onCanvas) return
-        pushUndo()
-        removeObject(selectedObjectId)
-        socketRef.current?.emit('object:delete', { boardId, objectId: selectedObjectId })
-        setSelectedObjectId(null)
+  function onTransformEnd() {
+    const nodes = transformerRef.current?.nodes() ?? []
+    nodes.forEach(node => {
+      const id = node.id()
+      const props = {
+        x: node.x(),
+        y: node.y(),
+        width: Math.max(20, node.width() * node.scaleX()),
+        height: Math.max(20, node.height() * node.scaleY()),
+        rotation: node.rotation(),
       }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectedObjectId, boardId, pushUndo, removeObject, socketRef, setSelectedObjectId])
-
-  function onTransformEnd(e: Konva.KonvaEventObject<Event>) {
-    const node = e.target
-    const props = {
-      x: node.x(),
-      y: node.y(),
-      width: Math.max(20, node.width() * node.scaleX()),
-      height: Math.max(20, node.height() * node.scaleY()),
-      rotation: node.rotation(),
-    }
-    node.scaleX(1)
-    node.scaleY(1)
-    updateObject(selectedObjectId, props)
-    socketRef.current?.emit('object:update', { boardId, objectId: selectedObjectId, props })
+      node.scaleX(1)
+      node.scaleY(1)
+      updateObject(id, props)
+      socketRef.current?.emit('object:update', { boardId, objectId: id, props })
+    })
   }
+
+  if (selectedIds.length === 0) return null
 
   return (
     <Transformer

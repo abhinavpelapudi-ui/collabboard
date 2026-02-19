@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { getToken } from '../hooks/useAuth'
@@ -19,8 +19,14 @@ export default function Board() {
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
   const socketRef = useSocket(boardId!, (newRole) => setRole(newRole))
-  const { undo } = useBoardStore()
-  const { showAIPanel } = useUIStore()
+  const { objects, addObject, removeObject, pushUndo, undo } = useBoardStore()
+  const { showAIPanel, selectedIds, setSelectedIds, clearSelection } = useUIStore()
+
+  // Keep stable refs so the keydown handler always sees fresh state
+  const selectedIdsRef = useRef(selectedIds)
+  const objectsRef = useRef(objects)
+  useEffect(() => { selectedIdsRef.current = selectedIds }, [selectedIds])
+  useEffect(() => { objectsRef.current = objects }, [objects])
   const [board, setBoard] = useState<BoardType | null>(null)
   const [role, setRole] = useState<BoardRole | null>(null)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -49,11 +55,54 @@ export default function Board() {
     function onKeyDown(e: KeyboardEvent) {
       const focused = document.activeElement
       const inInput = focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !inInput) { e.preventDefault(); undo() }
+      if (inInput) return
+
+      // Undo
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); undo(); return }
+
+      const ids = selectedIdsRef.current
+      const objs = objectsRef.current
+      if (ids.length === 0) return
+
+      // Delete / Backspace — remove all selected objects
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
+        pushUndo()
+        ids.forEach(id => {
+          removeObject(id)
+          socketRef.current?.emit('object:delete', { boardId, objectId: id })
+        })
+        clearSelection()
+        return
+      }
+
+      // Ctrl/Cmd+D — duplicate selected objects
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
+        e.preventDefault()
+        pushUndo()
+        const newIds: string[] = []
+        ids.forEach(id => {
+          const obj = objs.get(id)
+          if (!obj || obj.type === 'connector') return
+          const copy = { ...obj, id: crypto.randomUUID(), x: obj.x + 20, y: obj.y + 20, updated_at: new Date().toISOString() }
+          addObject(copy)
+          socketRef.current?.emit('object:create', { boardId, object: copy })
+          newIds.push(copy.id)
+        })
+        if (newIds.length) setSelectedIds(newIds)
+        return
+      }
+
+      // Ctrl/Cmd+A — select all non-connector objects
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        e.preventDefault()
+        const allIds = Array.from(objs.values()).filter(o => o.type !== 'connector').map(o => o.id)
+        setSelectedIds(allIds)
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [undo])
+  }, [boardId, undo, pushUndo, removeObject, addObject, clearSelection, setSelectedIds])
 
   async function saveTitle() {
     if (!board || titleValue === board.title) { setEditingTitle(false); return }

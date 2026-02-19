@@ -3,11 +3,12 @@ import { useUIStore, Tool } from '../../stores/uiStore'
 import { STICKY_COLORS } from '@collabboard/shared'
 
 const tools: { key: Tool; label: string; shortcut: string; icon: string }[] = [
-  { key: 'select', label: 'Select', shortcut: 'V', icon: '↖' },
-  { key: 'pan',    label: 'Pan',    shortcut: 'H', icon: '✋' },
-  { key: 'sticky', label: 'Sticky', shortcut: 'S', icon: '📝' },
-  { key: 'rect',   label: 'Rect',   shortcut: 'R', icon: '⬜' },
-  { key: 'circle', label: 'Circle', shortcut: 'C', icon: '⬤' },
+  { key: 'select',  label: 'Select',  shortcut: 'V', icon: '↖' },
+  { key: 'pan',     label: 'Pan',     shortcut: 'H', icon: '✋' },
+  { key: 'sticky',  label: 'Sticky',  shortcut: 'S', icon: '📝' },
+  { key: 'text',    label: 'Text',    shortcut: 'T', icon: 'T' },
+  { key: 'rect',    label: 'Rect',    shortcut: 'R', icon: '⬜' },
+  { key: 'circle',  label: 'Circle',  shortcut: 'C', icon: '⬤' },
   { key: 'frame',   label: 'Frame',   shortcut: 'F', icon: '▢' },
   { key: 'connect', label: 'Connect', shortcut: 'X', icon: '↗' },
 ]
@@ -25,6 +26,7 @@ export default function Toolbar() {
       if (e.key === 's' || e.key === 'S') setActiveTool('sticky')
       if (e.key === 'r' || e.key === 'R') setActiveTool('rect')
       if (e.key === 'c' || e.key === 'C') setActiveTool('circle')
+      if (e.key === 't' || e.key === 'T') setActiveTool('text')
       if (e.key === 'f' || e.key === 'F') setActiveTool('frame')
       if (e.key === 'x' || e.key === 'X') setActiveTool('connect')
       if (e.key === 'Escape') setActiveTool('select')
