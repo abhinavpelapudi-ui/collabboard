@@ -52,6 +52,15 @@ export function notifyUser(userId: string, event: string, data: unknown) {
  * Pushes a `role:changed` event to all active sockets for `userId`
  * and updates their role cache so subsequent object events are enforced correctly.
  */
+export function getRealtimeStats() {
+  const connectedUsers = userSockets.size
+  const rooms = io?.sockets.adapter.rooms ?? new Map()
+  // Board rooms use UUID format; exclude socket-id rooms (same as socket id)
+  const socketIds = new Set(io ? [...io.sockets.sockets.keys()] : [])
+  const activeBoards = [...rooms.keys()].filter(r => !socketIds.has(r)).length
+  return { connectedUsers, activeBoards }
+}
+
 export function notifyRoleChanged(userId: string, boardId: string, newRole: string) {
   if (!io) return
   const sockets = userSockets.get(userId) ?? new Set<string>()
