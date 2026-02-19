@@ -4,8 +4,8 @@ import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
 import { Server } from 'socket.io'
 import { createAdapter } from '@socket.io/redis-adapter'
-import Redis from 'ioredis'
 import dotenv from 'dotenv'
+import { redis } from './redis'
 import { testConnection, runMigrations } from './db'
 import { rateLimit } from './middleware/rateLimit'
 import boardsRouter from './routes/boards'
@@ -60,10 +60,9 @@ const io = new Server(server as any, {
 setIO(io)
 
 // ─── Redis adapter (enables horizontal scaling across multiple instances) ─────
-if (process.env.REDIS_URL) {
-  const pubClient = new Redis(process.env.REDIS_URL)
-  const subClient = pubClient.duplicate()
-  io.adapter(createAdapter(pubClient, subClient))
+if (redis) {
+  const subClient = redis.duplicate()
+  io.adapter(createAdapter(redis, subClient))
   console.log('🔴 Redis adapter connected')
 } else {
   console.log('⚠️  No REDIS_URL — using in-memory adapter (single instance only)')
