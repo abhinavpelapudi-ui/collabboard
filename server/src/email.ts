@@ -1,11 +1,17 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy client — only instantiated when RESEND_API_KEY is present
+function getResend() {
+  if (!process.env.RESEND_API_KEY) return null
+  return new Resend(process.env.RESEND_API_KEY)
+}
+
 const FROM = process.env.EMAIL_FROM || 'CollabBoard <noreply@collabboard.app>'
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'
 
 export async function sendWelcomeEmail(to: string, name: string) {
-  if (!process.env.RESEND_API_KEY) return
+  const resend = getResend()
+  if (!resend) return
   await resend.emails.send({
     from: FROM,
     to,
@@ -27,7 +33,8 @@ export async function sendWelcomeEmail(to: string, name: string) {
 }
 
 export async function sendEmailConfirmation(to: string, name: string, token: string) {
-  if (!process.env.RESEND_API_KEY) return
+  const resend = getResend()
+  if (!resend) return
   const link = `${CLIENT_URL}/confirm-email?token=${token}`
   await resend.emails.send({
     from: FROM,
@@ -48,7 +55,8 @@ export async function sendEmailConfirmation(to: string, name: string, token: str
 }
 
 export async function sendOTPEmail(to: string, code: string) {
-  if (!process.env.RESEND_API_KEY) return
+  const resend = getResend()
+  if (!resend) return
   await resend.emails.send({
     from: FROM,
     to,
