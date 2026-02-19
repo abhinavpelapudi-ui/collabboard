@@ -11,6 +11,7 @@ import PresenceBar from '../components/ui/PresenceBar'
 import AIChat from '../components/ui/AIChat'
 import ShareModal from '../components/ui/ShareModal'
 import BoardChat from '../components/ui/BoardChat'
+import ActivityLog from '../components/ui/ActivityLog'
 import { Board as BoardType, BoardRole } from '@collabboard/shared'
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
@@ -33,6 +34,7 @@ export default function Board() {
   const [titleValue, setTitleValue] = useState('')
   const [showShare, setShowShare] = useState(false)
   const [showChat, setShowChat] = useState(false)
+  const [showActivity, setShowActivity] = useState(false)
 
   const isViewer = role === 'viewer'
   const canEdit = role === 'editor' || role === 'owner'
@@ -159,16 +161,17 @@ export default function Board() {
           )}
           <button
             className={`text-xs px-2 py-1 rounded bg-gray-800 transition-colors ${showChat ? 'text-indigo-400 ring-1 ring-indigo-500' : 'text-gray-400 hover:text-white'}`}
-            onClick={() => setShowChat(s => !s)}
+            onClick={() => { setShowChat(s => !s); setShowActivity(false) }}
             title="Board chat"
           >
             💬 Chat
           </button>
           <button
-            className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800"
-            onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link copied!') }}
+            className={`text-xs px-2 py-1 rounded bg-gray-800 transition-colors ${showActivity ? 'text-amber-400 ring-1 ring-amber-500' : 'text-gray-400 hover:text-white'}`}
+            onClick={() => { setShowActivity(s => !s); setShowChat(false) }}
+            title="Activity log"
           >
-            Share
+            📋 Activity
           </button>
         </div>
       </header>
@@ -191,6 +194,15 @@ export default function Board() {
           boardId={boardId}
           socket={socketRef.current}
           onClose={() => setShowChat(false)}
+        />
+      )}
+
+      {/* Activity log panel */}
+      {showActivity && (
+        <ActivityLog
+          boardId={boardId}
+          socket={socketRef.current}
+          onClose={() => setShowActivity(false)}
         />
       )}
     </div>
