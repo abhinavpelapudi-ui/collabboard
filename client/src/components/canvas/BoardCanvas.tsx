@@ -244,9 +244,9 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
       pushUndo()
       const obj: StickyObject = {
         id: newId(), board_id: boardId, type: 'sticky',
-        x: x - 100, y: y - 100, width: 200, height: 200, rotation: 0,
+        x: x - 80, y: y - 50, width: 160, height: 100, rotation: 0,
         z_index: objects.size, created_by: userId, updated_at: new Date().toISOString(),
-        text: '', color: activeColor, font_size: 14,
+        text: '', color: activeColor, font_size: 16,
       }
       addObject(obj); socketRef.current?.emit('object:create', { boardId, object: obj })
       setActiveTool('select'); setSelectedObjectId(obj.id)

@@ -86,10 +86,12 @@ function StickyNote({ object, boardId, socketRef, isSelected }: Props) {
       <Text
         text={object.text || 'Double-click to edit'}
         fill={object.text ? '#1a1a1a' : '#9ca3af'}
-        fontSize={object.font_size}
+        fontSize={object.font_size || Math.max(12, Math.min(18, object.width / 12))}
         padding={10}
         width={object.width}
+        height={object.height - 10}
         wrap="word"
+        ellipsis={true}
       />
     </Group>
   )

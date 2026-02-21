@@ -57,7 +57,21 @@ def get_board_layout(needed_width: int = 0, needed_height: int = 0) -> str:
 
 @tool
 def create_sticky_note(text: str, x: int, y: int, color: str = "#FEF08A") -> dict:
-    """Create a sticky note on the board with text, position, and color."""
+    """Create a sticky note on the board with text, position, and color.
+
+    Size auto-adjusts based on text length to keep text readable.
+    """
+    # Auto-size: short text gets compact notes, longer text gets bigger ones
+    text_len = len(text)
+    if text_len <= 30:
+        w, h, fs = 160, 100, 16
+    elif text_len <= 80:
+        w, h, fs = 200, 140, 15
+    elif text_len <= 150:
+        w, h, fs = 220, 180, 14
+    else:
+        w, h, fs = 250, 220, 13
+
     return {
         "action": "create",
         "object_type": "sticky",
@@ -66,10 +80,10 @@ def create_sticky_note(text: str, x: int, y: int, color: str = "#FEF08A") -> dic
             "text": text,
             "x": x,
             "y": y,
-            "width": 200,
-            "height": 200,
+            "width": w,
+            "height": h,
             "color": color,
-            "font_size": 14,
+            "font_size": fs,
             "rotation": 0,
         },
     }

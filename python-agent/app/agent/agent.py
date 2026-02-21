@@ -38,7 +38,7 @@ EDITING EXISTING OBJECTS:
 - NEVER recreate an object that already exists. Update it in place.
 
 Guidelines:
-- Sticky notes are 200x200, leave 20-30px gaps
+- Sticky notes auto-size based on text length, leave 20-30px gaps
 - Colors: yellow (#FEF08A) ideas, blue (#93C5FD) info, green (#86EFAC) done, red (#FCA5A5) blockers
 - For connectors, reference temp_ids of objects you just created
 - ALWAYS call the tools. Do not just describe what you would do."""
