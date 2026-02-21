@@ -14,6 +14,12 @@ export interface BaseObject {
   z_index: number
   created_by: string
   updated_at: string
+  // Task management metadata (optional, stored in props JSONB)
+  assigned_to?: string
+  tags?: string[]
+  due_date?: string
+  priority?: 'low' | 'medium' | 'high'
+  status?: 'todo' | 'in_progress' | 'review' | 'done'
 }
 
 export interface StickyObject extends BaseObject {
@@ -156,6 +162,7 @@ export interface ClientToServerEvents {
   'object:create': (payload: { boardId: string; object: BoardObject }) => void
   'object:update': (payload: { boardId: string; objectId: string; props: Partial<BoardObject> }) => void
   'object:delete': (payload: { boardId: string; objectId: string }) => void
+  'comment:create': (payload: { boardId: string; objectId: string; content: string }) => void
 }
 
 // Server → Client
@@ -168,7 +175,32 @@ export interface ServerToClientEvents {
   'object:delete': (payload: { objectId: string }) => void
   'presence:update': (payload: { users: PresenceUser[] }) => void
   'role:changed': (payload: { boardId: string; role: BoardRole }) => void
+  'comment:created': (payload: { comment: ObjectComment }) => void
   'error': (payload: { message: string }) => void
+}
+
+// ─── Object Comments ────────────────────────────────────────────────────────
+
+export interface ObjectComment {
+  id: string
+  object_id: string
+  board_id: string
+  user_id: string
+  user_name: string
+  content: string
+  created_at: string
+}
+
+// ─── Board Documents ────────────────────────────────────────────────────────
+
+export interface BoardDocument {
+  id: string
+  board_id: string
+  title: string
+  content: object
+  created_by: string
+  updated_at: string
+  created_at: string
 }
 
 // ─── AI ──────────────────────────────────────────────────────────────────────

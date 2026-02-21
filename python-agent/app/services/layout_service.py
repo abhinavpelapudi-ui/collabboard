@@ -5,6 +5,10 @@ Analyzes existing board objects to find open space and prevent overlaps.
 
 from dataclasses import dataclass
 
+# Canvas bounds must match client CANVAS_WIDTH / CANVAS_HEIGHT
+CANVAS_WIDTH = 4000
+CANVAS_HEIGHT = 3000
+
 
 @dataclass
 class BBox:
@@ -104,24 +108,25 @@ def find_open_position(
     min_x = bounds["min_x"]
     min_y = bounds["min_y"]
 
+    def clamp(x: float, y: float) -> tuple[float, float]:
+        x = max(0.0, min(x, CANVAS_WIDTH - needed_width))
+        y = max(0.0, min(y, CANVAS_HEIGHT - needed_height))
+        return (x, y)
+
     if prefer == "right":
-        # Place to the right of all existing content
-        return (max_x + padding, min_y)
+        return clamp(max_x + padding, min_y)
 
     if prefer == "below":
-        # Place below all existing content
-        return (min_x, max_y + padding)
+        return clamp(min_x, max_y + padding)
 
     # Auto: choose whichever direction gives a more balanced layout
     board_w = max_x - min_x
     board_h = max_y - min_y
 
     if board_w <= board_h:
-        # Board is taller than wide — place to the right
-        return (max_x + padding, min_y)
+        return clamp(max_x + padding, min_y)
     else:
-        # Board is wider than tall — place below
-        return (min_x, max_y + padding)
+        return clamp(min_x, max_y + padding)
 
 
 def find_insert_position(
@@ -146,6 +151,13 @@ def find_insert_position(
         (x, y) that doesn't overlap with existing objects
     """
     bboxes = _extract_bboxes(board_state)
+
+    def clamp(x: float, y: float) -> tuple[float, float]:
+        x = max(0.0, min(x, CANVAS_WIDTH - item_width))
+        y = max(0.0, min(y, CANVAS_HEIGHT - item_height))
+        return (x, y)
+
+    target_x, target_y = clamp(target_x, target_y)
     candidate = BBox(x=target_x, y=target_y, width=item_width, height=item_height)
 
     if not any(candidate.overlaps(b, padding) for b in bboxes):
@@ -162,16 +174,14 @@ def find_insert_position(
             (distance * step, distance * step),   # diagonal
         ]
         for dx, dy in offsets:
-            nx, ny = target_x + dx, target_y + dy
-            if nx < 0 or ny < 0:
-                continue
+            nx, ny = clamp(target_x + dx, target_y + dy)
             candidate = BBox(x=nx, y=ny, width=item_width, height=item_height)
             if not any(candidate.overlaps(b, padding) for b in bboxes):
                 return (nx, ny)
 
-    # Fallback: place far to the right
+    # Fallback: place far to the right, clamped
     max_x = max((b.right for b in bboxes), default=0)
-    return (max_x + padding, target_y)
+    return clamp(max_x + padding, target_y)
 
 
 def describe_board_layout(board_state: list[dict]) -> str:
@@ -181,7 +191,7 @@ def describe_board_layout(board_state: list[dict]) -> str:
     """
     bboxes = _extract_bboxes(board_state)
     if not bboxes:
-        return "The board is empty. You can place objects starting at position (100, 100)."
+        return f"The board is empty (canvas is {CANVAS_WIDTH}x{CANVAS_HEIGHT}px). You can place objects starting at position (100, 100)."
 
     bounds = get_board_bounds(board_state)
 
@@ -232,6 +242,7 @@ def describe_board_layout(board_state: list[dict]) -> str:
         density_desc += f" The {', '.join(sparse_regions)} area is empty."
 
     return (
+        f"Board canvas is {CANVAS_WIDTH}x{CANVAS_HEIGHT}px. "
         f"Board has {len(bboxes)} objects ({types_desc}). "
         f"{occupied_desc} {open_desc}{density_desc}"
     )

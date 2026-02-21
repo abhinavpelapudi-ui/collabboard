@@ -4,7 +4,6 @@ import { STICKY_COLORS } from '@collabboard/shared'
 
 const tools: { key: Tool; label: string; shortcut: string; icon: string }[] = [
   { key: 'select',  label: 'Select',  shortcut: 'V', icon: '↖' },
-  { key: 'pan',     label: 'Pan',     shortcut: 'H', icon: '✋' },
   { key: 'sticky',  label: 'Sticky',  shortcut: 'S', icon: '📝' },
   { key: 'text',    label: 'Text',    shortcut: 'T', icon: 'T' },
   { key: 'rect',    label: 'Rect',    shortcut: 'R', icon: '⬜' },
@@ -22,7 +21,6 @@ export default function Toolbar() {
       const focused = document.activeElement
       if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) return
       if (e.key === 'v' || e.key === 'V') setActiveTool('select')
-      if (e.key === 'h' || e.key === 'H') setActiveTool('pan')
       if (e.key === 's' || e.key === 'S') setActiveTool('sticky')
       if (e.key === 'r' || e.key === 'R') setActiveTool('rect')
       if (e.key === 'c' || e.key === 'C') setActiveTool('circle')

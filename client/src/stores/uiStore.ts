@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type Tool = 'select' | 'pan' | 'sticky' | 'rect' | 'circle' | 'frame' | 'text' | 'connect'
+export type Tool = 'select' | 'sticky' | 'rect' | 'circle' | 'frame' | 'text' | 'connect'
 
 interface UIStore {
   activeTool: Tool

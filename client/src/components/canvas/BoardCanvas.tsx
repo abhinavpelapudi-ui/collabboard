@@ -24,10 +24,15 @@ interface Props {
   socketRef: React.MutableRefObject<Socket | null>
 }
 
+// Fixed canvas dimensions
+const CANVAS_WIDTH = 4000
+const CANVAS_HEIGHT = 3000
+
 function newId() { return crypto.randomUUID() }
 
 export default function BoardCanvas({ boardId, socketRef }: Props) {
   const stageRef = useRef<Konva.Stage>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const userId = getUser()?.userId || ''
   const { objects, addObject, pushUndo } = useBoardStore()
   const {
@@ -37,7 +42,6 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
   } = useUIStore()
 
   const [pendingConnectorSource, setPendingConnectorSource] = useState<string | null>(null)
-  const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight })
 
   // Drag-select state
   const isDragSelecting = useRef(false)
@@ -48,26 +52,20 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
     if (activeTool !== 'connect') setPendingConnectorSource(null)
   }, [activeTool])
 
-  // Keep stage size in sync with window
+  // Fit-to-view: scroll the container to center all objects
   useEffect(() => {
-    const onResize = () => setStageSize({ width: window.innerWidth, height: window.innerHeight })
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
+    if (!fitRequest || !containerRef.current) return
+    const container = containerRef.current
 
-  useEffect(() => {
-    if (!fitRequest || !stageRef.current) return
-    const stage = stageRef.current
-
-    // Calculate bounding box of all objects
     const allObjects = Array.from(objects.values()).filter(o => o.type !== 'connector')
     if (allObjects.length === 0) {
-      stage.position({ x: 0, y: 0 })
-      stage.scale({ x: 1, y: 1 })
-      stage.batchDraw()
+      // Center the canvas in the viewport
+      container.scrollLeft = (CANVAS_WIDTH - container.clientWidth) / 2
+      container.scrollTop = (CANVAS_HEIGHT - container.clientHeight) / 2
       return
     }
 
+    // Calculate bounding box of all objects
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     for (const obj of allObjects) {
       minX = Math.min(minX, obj.x)
@@ -76,59 +74,16 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
       maxY = Math.max(maxY, obj.y + obj.height)
     }
 
-    const contentW = maxX - minX
-    const contentH = maxY - minY
-    const stageW = stage.width()
-    const stageH = stage.height()
-    const padding = 80 // px padding around content
-
-    // Scale to fit with padding
-    const scaleX = (stageW - padding * 2) / contentW
-    const scaleY = (stageH - padding * 2) / contentH
-    const newScale = Math.min(scaleX, scaleY, 2) // cap at 2x zoom
-
-    // Center the content
+    // Scroll to center the content bounding box in the viewport
     const centerX = (minX + maxX) / 2
     const centerY = (minY + maxY) / 2
-    const newX = stageW / 2 - centerX * newScale
-    const newY = stageH / 2 - centerY * newScale
-
-    stage.scale({ x: newScale, y: newScale })
-    stage.position({ x: newX, y: newY })
-    stage.batchDraw()
+    container.scrollLeft = centerX - container.clientWidth / 2
+    container.scrollTop = centerY - container.clientHeight / 2
   }, [fitRequest, objects])
 
-  // Non-passive wheel for zoom
-  useEffect(() => {
-    const container = stageRef.current?.container()
-    if (!container) return
-    function handleWheel(e: WheelEvent) {
-      e.preventDefault()
-      const stage = stageRef.current!
-      const oldScale = stage.scaleX()
-      const pointer = stage.getPointerPosition()!
-      const scaleBy = 1.05
-      const newScale = e.deltaY < 0
-        ? Math.min(oldScale * scaleBy, 5)
-        : Math.max(oldScale / scaleBy, 0.1)
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      }
-      stage.scale({ x: newScale, y: newScale })
-      stage.position({
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale,
-      })
-    }
-    container.addEventListener('wheel', handleWheel, { passive: false })
-    return () => container.removeEventListener('wheel', handleWheel)
-  }, [])
-
+  // Get pointer position on the canvas (no transform needed — scale is always 1)
   function getWorldPos(stage: Konva.Stage) {
-    const pos = stage.getPointerPosition()!
-    const transform = stage.getAbsoluteTransform().copy().invert()
-    return transform.point(pos)
+    return stage.getPointerPosition()!
   }
 
   // Cursor sync
@@ -141,15 +96,14 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
     if (!stage) return
     const pos = stage.getPointerPosition()
     if (!pos) return
-    const worldPos = getWorldPos(stage)
-    socketRef.current?.emit('cursor:move', { boardId, x: worldPos.x, y: worldPos.y })
+    socketRef.current?.emit('cursor:move', { boardId, x: pos.x, y: pos.y })
 
     // Update drag selection box
     if (isDragSelecting.current && dragStartWorld.current) {
-      const x = Math.min(dragStartWorld.current.x, worldPos.x)
-      const y = Math.min(dragStartWorld.current.y, worldPos.y)
-      const w = Math.abs(worldPos.x - dragStartWorld.current.x)
-      const h = Math.abs(worldPos.y - dragStartWorld.current.y)
+      const x = Math.min(dragStartWorld.current.x, pos.x)
+      const y = Math.min(dragStartWorld.current.y, pos.y)
+      const w = Math.abs(pos.x - dragStartWorld.current.x)
+      const h = Math.abs(pos.y - dragStartWorld.current.y)
       if (w > 4 || h > 4) setSelectionBox({ x, y, w, h })
     }
   }, [boardId, socketRef])
@@ -307,14 +261,18 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
 
   const objectList = Array.from(objects.values()).sort((a, b) => a.z_index - b.z_index)
 
-  const cursorStyle = activeTool === 'pan' ? 'grab'
-    : ['sticky', 'rect', 'circle', 'frame', 'text', 'connect'].includes(activeTool) ? 'crosshair'
+  const cursorStyle = ['sticky', 'rect', 'circle', 'frame', 'text', 'connect'].includes(activeTool)
+    ? 'crosshair'
     : 'default'
 
   return (
-    <>
+    <div
+      ref={containerRef}
+      className="flex-1 overflow-auto"
+      style={{ background: '#0a0a1a' }}
+    >
       {activeTool === 'connect' && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-gray-900 border border-indigo-500 rounded-xl px-4 py-2 text-sm text-indigo-300 shadow-lg pointer-events-none">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-gray-900 border border-indigo-500 rounded-xl px-4 py-2 text-sm text-indigo-300 shadow-lg pointer-events-none">
           {pendingConnectorSource
             ? 'Now click the second shape to connect — or press Escape to cancel'
             : 'Click a shape to start a connector'}
@@ -322,16 +280,15 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
       )}
 
       {selectedIds.length > 1 && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-gray-900 border border-gray-700 rounded-xl px-4 py-2 text-sm text-gray-300 shadow-lg pointer-events-none">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-gray-900 border border-gray-700 rounded-xl px-4 py-2 text-sm text-gray-300 shadow-lg pointer-events-none">
           {selectedIds.length} objects selected · Delete to remove · Ctrl+D to duplicate
         </div>
       )}
 
       <Stage
         ref={stageRef}
-        width={stageSize.width}
-        height={stageSize.height}
-        draggable={activeTool === 'pan'}
+        width={CANVAS_WIDTH}
+        height={CANVAS_HEIGHT}
         onMouseMove={onMouseMove}
         onMouseDown={onMouseDown}
         onMouseUp={onMouseUp}
@@ -339,6 +296,14 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
         style={{ cursor: cursorStyle }}
       >
         <Layer>
+          {/* Canvas background */}
+          <KonvaRect
+            x={0} y={0}
+            width={CANVAS_WIDTH} height={CANVAS_HEIGHT}
+            fill="#111827"
+            listening={false}
+          />
+
           {objectList.map(obj => {
             const sel = selectedIds.includes(obj.id)
             if (obj.type === 'connector') return (
@@ -398,6 +363,6 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
           <CursorsLayer />
         </Layer>
       </Stage>
-    </>
+    </div>
   )
 }

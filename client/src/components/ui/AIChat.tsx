@@ -16,6 +16,9 @@ interface Props {
 interface Message {
   role: 'user' | 'assistant'
   text: string
+  traceId?: string
+  command?: string
+  model?: string
 }
 
 // SpeechRecognition types for browser API
@@ -55,6 +58,9 @@ export default function AIChat({ boardId, socketRef }: Props) {
   const [availableModels, setAvailableModels] = useState<Array<{
     model_id: string; display_name: string; provider: string; is_free: boolean; available: boolean
   }>>([])
+  const [feedback, setFeedback] = useState<Record<string, 'up' | 'down'>>({})
+  const [feedbackComment, setFeedbackComment] = useState<Record<string, string>>({})
+  const [showCommentFor, setShowCommentFor] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -103,6 +109,30 @@ export default function AIChat({ boardId, socketRef }: Props) {
     }
   }
 
+  async function submitFeedback(msg: Message, rating: 'up' | 'down', comment = '') {
+    if (!msg.traceId) return
+    setFeedback(prev => ({ ...prev, [msg.traceId!]: rating }))
+    setShowCommentFor(null)
+    try {
+      const token = getToken()
+      await axios.post(
+        `${SERVER_URL}/api/agent/feedback`,
+        {
+          boardId,
+          traceId: msg.traceId,
+          rating,
+          comment,
+          command: msg.command || '',
+          response: msg.text,
+          model: msg.model || '',
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+    } catch {
+      // Non-critical — silently fail
+    }
+  }
+
   async function sendCommand() {
     if (!input.trim() || loading) return
     const command = input.trim()
@@ -123,7 +153,13 @@ export default function AIChat({ boardId, socketRef }: Props) {
       )
 
       applyActions(data)
-      setMessages(prev => [...prev, { role: 'assistant', text: data.message || 'Done!' }])
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        text: data.message || 'Done!',
+        traceId: data.traceId || undefined,
+        command,
+        model: selectedModel,
+      }])
     } catch (err: any) {
       const errMsg = err?.response?.data?.error || 'Something went wrong. Try again.'
       setMessages(prev => [...prev, { role: 'assistant', text: errMsg }])
@@ -260,15 +296,69 @@ export default function AIChat({ boardId, socketRef }: Props) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 max-h-72">
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`text-sm rounded-xl px-3 py-2 max-w-[90%] ${
-              msg.role === 'user'
-                ? 'bg-indigo-600 text-white ml-auto'
-                : 'bg-gray-800 text-gray-200'
-            }`}
-          >
-            {msg.text}
+          <div key={i} className={`max-w-[90%] ${msg.role === 'user' ? 'ml-auto' : ''}`}>
+            <div
+              className={`text-sm rounded-xl px-3 py-2 ${
+                msg.role === 'user'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-800 text-gray-200'
+              }`}
+            >
+              {msg.text}
+            </div>
+            {msg.role === 'assistant' && msg.traceId && (
+              <div className="mt-1 flex items-center gap-1">
+                {feedback[msg.traceId] ? (
+                  <span className="text-xs text-gray-500">
+                    {feedback[msg.traceId] === 'up' ? '👍' : '👎'} Thanks for your feedback!
+                  </span>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => submitFeedback(msg, 'up')}
+                      className="text-xs text-gray-500 hover:text-emerald-400 px-1.5 py-0.5 rounded hover:bg-gray-800 transition-colors"
+                      title="Good response"
+                    >
+                      👍
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (showCommentFor === msg.traceId) {
+                          setShowCommentFor(null)
+                        } else {
+                          setShowCommentFor(msg.traceId!)
+                        }
+                      }}
+                      className="text-xs text-gray-500 hover:text-red-400 px-1.5 py-0.5 rounded hover:bg-gray-800 transition-colors"
+                      title="Bad response"
+                    >
+                      👎
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+            {showCommentFor === msg.traceId && !feedback[msg.traceId!] && (
+              <div className="mt-1 flex gap-1">
+                <input
+                  className="flex-1 bg-gray-800 text-white text-xs rounded-md px-2 py-1 outline-none border border-gray-600 focus:border-red-500"
+                  placeholder="What went wrong? (optional)"
+                  value={feedbackComment[msg.traceId!] || ''}
+                  onChange={e => setFeedbackComment(prev => ({ ...prev, [msg.traceId!]: e.target.value }))}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      submitFeedback(msg, 'down', feedbackComment[msg.traceId!] || '')
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => submitFeedback(msg, 'down', feedbackComment[msg.traceId!] || '')}
+                  className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded-md transition-colors"
+                >
+                  Send
+                </button>
+              </div>
+            )}
           </div>
         ))}
         {loading && (

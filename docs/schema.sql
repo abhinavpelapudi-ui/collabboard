@@ -113,6 +113,42 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- AI response feedback (thumbs up/down + optional comment)
+CREATE TABLE IF NOT EXISTS ai_feedback (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  board_id   UUID NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+  user_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  trace_id   TEXT NOT NULL,
+  rating     TEXT NOT NULL,              -- 'up' | 'down'
+  comment    TEXT DEFAULT '',
+  command    TEXT DEFAULT '',             -- user prompt that triggered the response
+  response   TEXT DEFAULT '',             -- agent response text
+  model      TEXT DEFAULT '',             -- LLM model used
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Comments on board objects
+CREATE TABLE IF NOT EXISTS object_comments (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  object_id  UUID NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+  board_id   UUID NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+  user_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  user_name  TEXT NOT NULL,
+  content    TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Rich text documents linked to boards
+CREATE TABLE IF NOT EXISTS board_documents (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  board_id   UUID NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+  title      TEXT NOT NULL DEFAULT 'Untitled',
+  content    JSONB NOT NULL DEFAULT '{}',
+  created_by TEXT REFERENCES users(id),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_workspaces_owner ON workspaces(owner_id);
 CREATE INDEX IF NOT EXISTS idx_wsmembers_user   ON workspace_members(user_id);
@@ -125,3 +161,7 @@ CREATE INDEX IF NOT EXISTS idx_members_user     ON board_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_oauth_user       ON oauth_accounts(user_id);
 CREATE INDEX IF NOT EXISTS idx_otp_email        ON otp_codes(email);
 CREATE INDEX IF NOT EXISTS idx_confirm_user     ON email_confirmations(user_id);
+CREATE INDEX IF NOT EXISTS idx_feedback_board   ON ai_feedback(board_id);
+CREATE INDEX IF NOT EXISTS idx_feedback_trace   ON ai_feedback(trace_id);
+CREATE INDEX IF NOT EXISTS idx_obj_comments_object ON object_comments(object_id);
+CREATE INDEX IF NOT EXISTS idx_board_docs_board ON board_documents(board_id);

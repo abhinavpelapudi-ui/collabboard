@@ -134,7 +134,33 @@ agent.post('/command', requireAuth, async (c) => {
     updatedObjects,
     deletedObjectIds,
     fitToView: agentResult.fit_to_view || false,
+    traceId: agentResult.trace_id || '',
   })
+})
+
+// ─── POST /feedback — Store user feedback on AI responses ────────────────────
+agent.post('/feedback', requireAuth, async (c) => {
+  const body = await c.req.json()
+  const schema = z.object({
+    boardId: z.string().uuid(),
+    traceId: z.string().min(1),
+    rating: z.enum(['up', 'down']),
+    comment: z.string().max(1000).optional().default(''),
+    command: z.string().max(2000).optional().default(''),
+    response: z.string().max(5000).optional().default(''),
+    model: z.string().max(100).optional().default(''),
+  })
+
+  const { boardId, traceId, rating, comment, command, response, model } = schema.parse(body)
+  const userId = c.get('userId')
+
+  await pool.query(
+    `INSERT INTO ai_feedback (board_id, user_id, trace_id, rating, comment, command, response, model)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [boardId, userId, traceId, rating, comment, command, response, model]
+  )
+
+  return c.json({ success: true })
 })
 
 // ─── POST /upload — Forward file to Python agent, store document metadata ────

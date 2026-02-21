@@ -12,6 +12,8 @@ import AIChat from '../components/ui/AIChat'
 import ShareModal from '../components/ui/ShareModal'
 import BoardChat from '../components/ui/BoardChat'
 import ActivityLog from '../components/ui/ActivityLog'
+import ObjectDetailPanel from '../components/ui/ObjectDetailPanel'
+import DocumentsPanel from '../components/ui/DocumentsPanel'
 import { Board as BoardType, BoardRole } from '@collabboard/shared'
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
@@ -51,6 +53,7 @@ export default function Board() {
   const [showChat, setShowChat] = useState(false)
   const [showActivity, setShowActivity] = useState(false)
   const [unreadChat, setUnreadChat] = useState(0)
+  const [showDocs, setShowDocs] = useState(false)
   const showChatRef = useRef(showChat)
   useEffect(() => { showChatRef.current = showChat }, [showChat])
 
@@ -196,6 +199,13 @@ export default function Board() {
           >
             📋 Activity
           </button>
+          <button
+            className={`text-xs px-2 py-1 rounded bg-gray-800 transition-colors ${showDocs ? 'text-emerald-400 ring-1 ring-emerald-500' : 'text-gray-400 hover:text-white'}`}
+            onClick={() => setShowDocs(s => !s)}
+            title="Documents"
+          >
+            📄 Docs
+          </button>
         </div>
       </header>
 
@@ -234,6 +244,27 @@ export default function Board() {
           boardId={boardId}
           socket={socketRef.current}
           onClose={() => setShowActivity(false)}
+        />
+      )}
+
+      {/* Object detail panel — task metadata + comments */}
+      {selectedIds.length === 1 && (() => {
+        const obj = objects.get(selectedIds[0])
+        return obj && obj.type !== 'connector'
+      })() && (
+        <ObjectDetailPanel
+          boardId={boardId}
+          objectId={selectedIds[0]}
+          socketRef={socketRef}
+          onClose={clearSelection}
+        />
+      )}
+
+      {/* Documents panel */}
+      {showDocs && (
+        <DocumentsPanel
+          boardId={boardId}
+          onClose={() => setShowDocs(false)}
         />
       )}
     </div>

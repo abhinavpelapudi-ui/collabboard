@@ -19,6 +19,7 @@ from app.agent.tools.chart_tools import CHART_TOOLS
 from app.agent.tools.document_tools import DOCUMENT_TOOLS
 from app.agent.tools.sprint_tools import SPRINT_TOOLS
 from app.agent.tools.planning_tools import PLANNING_TOOLS
+from app.agent.tools.diagram_tools import DIAGRAM_TOOLS
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,15 @@ EDITING EXISTING OBJECTS:
 - Use find_objects_by_text() to search for objects by text content.
 - NEVER recreate an object that already exists. Update it in place.
 
+DIAGRAMS:
+- Use generate_sequence_diagram for message flow between actors/services.
+- Use generate_system_diagram for architecture and component layouts.
+- Use generate_project_tracker to visualize task completion with charts.
+
+DOCUMENT ANALYSIS:
+- Use analyze_document to create visual summaries, key points, timelines, or stats from uploaded docs.
+- The board_id is provided in the context below — pass it to document tools.
+
 Guidelines:
 - Sticky notes auto-size based on text length, leave 20-30px gaps
 - Colors: yellow (#FEF08A) ideas, blue (#93C5FD) info, green (#86EFAC) done, red (#FCA5A5) blockers
@@ -44,7 +54,7 @@ Guidelines:
 - ALWAYS call the tools. Do not just describe what you would do."""
 
 
-ALL_TOOLS = BOARD_TOOLS + CHART_TOOLS + DOCUMENT_TOOLS + SPRINT_TOOLS + PLANNING_TOOLS
+ALL_TOOLS = BOARD_TOOLS + CHART_TOOLS + DOCUMENT_TOOLS + SPRINT_TOOLS + PLANNING_TOOLS + DIAGRAM_TOOLS
 
 
 def _create_llm(spec: ModelSpec) -> BaseChatModel:
@@ -146,6 +156,23 @@ def _build_board_context(board_state: list[dict]) -> str:
         if color:
             parts.append(f"color={color}")
         parts.append(f"pos=({x},{y}) size={w}x{h}")
+
+        # Task metadata
+        assigned = obj.get("assigned_to", "")
+        if assigned:
+            parts.append(f"assigned={assigned}")
+        tags = obj.get("tags")
+        if tags:
+            parts.append(f"tags={','.join(tags)}")
+        status = obj.get("status", "")
+        if status:
+            parts.append(f"status={status}")
+        priority = obj.get("priority", "")
+        if priority:
+            parts.append(f"priority={priority}")
+        due = obj.get("due_date", "")
+        if due:
+            parts.append(f"due={due}")
 
         lines.append(" ".join(parts))
         listed += 1
@@ -265,6 +292,14 @@ def _classify_operation(command: str) -> str:
         return "plan_generation"
     if any(w in cmd for w in ["workflow", "process", "flow"]):
         return "workflow_generation"
+    if any(w in cmd for w in ["sequence", "seq diagram"]):
+        return "sequence_diagram"
+    if any(w in cmd for w in ["architecture", "system diagram", "component"]):
+        return "system_diagram"
+    if any(w in cmd for w in ["tracker", "completion", "progress"]):
+        return "project_tracking"
+    if any(w in cmd for w in ["analyze", "summarize", "summary", "timeline", "statistics"]):
+        return "document_analysis"
     if any(w in cmd for w in ["document", "pdf", "search", "find in"]):
         return "document_search"
     return "board_manipulation"

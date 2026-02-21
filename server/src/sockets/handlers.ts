@@ -234,6 +234,26 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
     }
   })
 
+  // ─── comment:create ──────────────────────────────────────────────────────
+  socket.on('comment:create', async ({ boardId, objectId, content }: { boardId: string; objectId: string; content: string }) => {
+    const role = getCachedRole(socket.id, boardId)
+    if (!role) return
+
+    const trimmed = (content ?? '').trim().slice(0, 2000)
+    if (!trimmed) return
+
+    try {
+      const { rows } = await pool.query(
+        `INSERT INTO object_comments (object_id, board_id, user_id, user_name, content)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [objectId, boardId, socket.userId, socket.userName, trimmed]
+      )
+      io.to(`board:${boardId}`).emit('comment:created', { comment: rows[0] })
+    } catch (err) {
+      console.error('Failed to persist comment', err)
+    }
+  })
+
   // ─── disconnect ───────────────────────────────────────────────────────────
   socket.on('disconnect', () => {
     unregisterUserSocket(socket.userId, socket.id)
