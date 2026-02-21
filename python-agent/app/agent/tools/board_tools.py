@@ -1,17 +1,20 @@
-"""Board manipulation tools that mirror CollabBoard's existing tool set.
+"""Board manipulation tools for CollabBoard.
 
-Each tool returns a list of BoardAction dicts. The LangChain agent calls these
-tools, and the results are collected into the final response sent to Node.js.
+Each tool returns BoardAction dicts. The LangChain agent calls these tools,
+and the results are collected into the final response sent to Node.js.
+
+IMPORTANT: Tool count is kept low (9 tools) to ensure reliable function
+calling with Llama models on Groq.
 """
 
 import json
 import uuid
+from typing import Literal
 from langchain_core.tools import tool
 
 from app.services.layout_service import (
     describe_board_layout,
     find_open_position,
-    find_insert_position,
 )
 
 # Thread-local board state set before each agent invocation
@@ -26,6 +29,30 @@ def set_board_state(board_state: list[dict]):
 
 def _new_temp_id(prefix: str = "obj") -> str:
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
+
+
+@tool
+def get_board_layout(needed_width: int = 0, needed_height: int = 0) -> str:
+    """Analyze the board and find free space for new content.
+
+    ALWAYS call this FIRST before creating objects so you know where to place them.
+
+    If needed_width and needed_height are provided (> 0), also returns recommended
+    x, y coordinates where a block of that size can fit without overlapping.
+
+    Args:
+        needed_width: Width in pixels of content to place (0 = just describe layout)
+        needed_height: Height in pixels of content to place (0 = just describe layout)
+    """
+    layout_desc = describe_board_layout(_current_board_state)
+    if needed_width > 0 and needed_height > 0:
+        x, y = find_open_position(
+            _current_board_state,
+            needed_width=needed_width,
+            needed_height=needed_height,
+        )
+        layout_desc += f"\n\nRecommended placement for {needed_width}x{needed_height} block: x={int(x)}, y={int(y)}"
+    return layout_desc
 
 
 @tool
@@ -50,9 +77,9 @@ def create_sticky_note(text: str, x: int, y: int, color: str = "#FEF08A") -> dic
 
 @tool
 def create_shape(
-    shape_type: str, x: int, y: int, width: int, height: int, fill: str = "#93C5FD"
+    shape_type: Literal["rect", "circle"], x: int, y: int, width: int, height: int, fill: str = "#93C5FD"
 ) -> dict:
-    """Create a rectangle or circle shape. shape_type must be 'rect' or 'circle'."""
+    """Create a rectangle or circle shape on the board."""
     return {
         "action": "create",
         "object_type": shape_type,
@@ -110,9 +137,7 @@ def create_text(text: str, x: int, y: int, font_size: int = 16, color: str = "#e
 
 
 @tool
-def create_connector(
-    from_temp_id: str, to_temp_id: str, style: str = "solid", color: str = "#6366f1"
-) -> dict:
+def create_connector(from_temp_id: str, to_temp_id: str, color: str = "#6366f1") -> dict:
     """Create a connector arrow between two objects. Use their temp_ids from previous tool calls."""
     return {
         "action": "create",
@@ -121,7 +146,7 @@ def create_connector(
         "props": {
             "from_temp_id": from_temp_id,
             "to_temp_id": to_temp_id,
-            "style": style,
+            "style": "solid",
             "color": color,
             "x": 0,
             "y": 0,
@@ -133,35 +158,46 @@ def create_connector(
 
 
 @tool
-def move_object(object_id: str, x: int, y: int) -> dict:
-    """Move an existing object to a new position. Requires the real object ID."""
-    return {
-        "action": "update",
-        "object_type": "sticky",  # type doesn't matter for updates
-        "object_id": object_id,
-        "props": {"x": x, "y": y},
-    }
+def update_object(
+    object_id: str,
+    text: str = "",
+    color: str = "",
+    x: int = -1,
+    y: int = -1,
+    width: int = -1,
+    height: int = -1,
+) -> dict:
+    """Update an existing object: move, resize, recolor, or change text. Only set fields you want to change.
 
+    Args:
+        object_id: The ID of the object to update (from board listing)
+        text: New text content (leave empty to keep current)
+        color: New color hex code (leave empty to keep current)
+        x: New x position (-1 to keep current)
+        y: New y position (-1 to keep current)
+        width: New width (-1 to keep current)
+        height: New height (-1 to keep current)
+    """
+    props: dict = {}
+    if text:
+        props["text"] = text
+    if color:
+        props["color"] = color
+        props["fill"] = color
+    if x >= 0:
+        props["x"] = x
+    if y >= 0:
+        props["y"] = y
+    if width >= 0:
+        props["width"] = width
+    if height >= 0:
+        props["height"] = height
 
-@tool
-def update_text(object_id: str, text: str) -> dict:
-    """Update the text content of an existing object. Requires the real object ID."""
     return {
         "action": "update",
         "object_type": "sticky",
         "object_id": object_id,
-        "props": {"text": text},
-    }
-
-
-@tool
-def change_color(object_id: str, color: str) -> dict:
-    """Change the color of an existing object. Requires the real object ID."""
-    return {
-        "action": "update",
-        "object_type": "sticky",
-        "object_id": object_id,
-        "props": {"color": color, "fill": color},
+        "props": props,
     }
 
 
@@ -177,116 +213,10 @@ def delete_object(object_id: str) -> dict:
 
 
 @tool
-def resize_object(object_id: str, width: int, height: int) -> dict:
-    """Resize an existing object. Requires the real object ID."""
-    return {
-        "action": "update",
-        "object_type": "sticky",
-        "object_id": object_id,
-        "props": {"width": width, "height": height},
-    }
-
-
-@tool
-def get_board_layout() -> str:
-    """Analyze the current board layout and find where free space is.
-
-    ALWAYS call this tool FIRST before creating any new objects.
-    It tells you where existing objects are and where to place new content
-    so nothing overlaps.
-
-    Returns a description of the board layout with recommended placement coordinates.
-    """
-    return describe_board_layout(_current_board_state)
-
-
-@tool
-def find_free_space(needed_width: int, needed_height: int, prefer: str = "right") -> str:
-    """Find a specific position on the board where new content of the given size can fit
-    without overlapping existing objects.
-
-    Args:
-        needed_width: Total width in pixels of the content you want to place
-        needed_height: Total height in pixels of the content you want to place
-        prefer: Where to place relative to existing content - 'right', 'below', or 'auto'
-
-    Returns a JSON string with the recommended x, y coordinates.
-    """
-    x, y = find_open_position(
-        _current_board_state,
-        needed_width=needed_width,
-        needed_height=needed_height,
-        prefer=prefer,
-    )
-    return json.dumps({"x": int(x), "y": int(y)})
-
-
-@tool
-def find_position_near(target_x: int, target_y: int, item_width: int = 200, item_height: int = 200) -> str:
-    """Find the nearest non-overlapping position close to a target location.
-
-    Use this when the user specifies where they want something placed,
-    or when you want to place something near an existing object.
-
-    Returns a JSON string with the adjusted x, y coordinates.
-    """
-    x, y = find_insert_position(
-        _current_board_state,
-        target_x=target_x,
-        target_y=target_y,
-        item_width=item_width,
-        item_height=item_height,
-    )
-    return json.dumps({"x": int(x), "y": int(y)})
-
-
-@tool
-def list_board_objects(object_type: str = "", limit: int = 30) -> str:
-    """List objects currently on the board with their IDs, text, color, and position.
-
-    Use this to find specific objects when the board context listing is truncated
-    or when you need to see all objects of a certain type.
-
-    Args:
-        object_type: Filter by type (e.g. 'sticky', 'rect', 'text', 'frame'). Empty = all types.
-        limit: Maximum number of objects to return.
-
-    Returns a JSON list of objects with id, type, text, color, x, y, width, height.
-    """
-    results = []
-    for obj in _current_board_state:
-        if obj.get("type") == "connector":
-            continue
-        if object_type and obj.get("type") != object_type:
-            continue
-        if len(results) >= limit:
-            break
-        results.append({
-            "id": obj.get("id", ""),
-            "type": obj.get("type", "unknown"),
-            "text": (obj.get("text", "") or obj.get("title", ""))[:120],
-            "color": obj.get("color", "") or obj.get("fill", ""),
-            "x": int(obj.get("x", 0)),
-            "y": int(obj.get("y", 0)),
-            "width": int(obj.get("width", 0)),
-            "height": int(obj.get("height", 0)),
-        })
-    if not results:
-        return json.dumps({"message": "No matching objects found.", "objects": []})
-    return json.dumps({"count": len(results), "objects": results})
-
-
-@tool
 def find_objects_by_text(search_text: str) -> str:
-    """Search for board objects whose text content contains the given search string.
+    """Search for board objects whose text contains the given string (case-insensitive).
 
-    Case-insensitive partial match. Returns matching objects with their IDs so you
-    can update, move, recolor, or delete them.
-
-    Args:
-        search_text: Text to search for (case-insensitive, partial match).
-
-    Returns a JSON list of matching objects.
+    Returns matching objects with IDs so you can update or delete them.
     """
     query = search_text.lower()
     results = []
@@ -300,29 +230,21 @@ def find_objects_by_text(search_text: str) -> str:
                 "color": obj.get("color", "") or obj.get("fill", ""),
                 "x": int(obj.get("x", 0)),
                 "y": int(obj.get("y", 0)),
-                "width": int(obj.get("width", 0)),
-                "height": int(obj.get("height", 0)),
             })
     if not results:
-        return json.dumps({"message": f"No objects found containing '{search_text}'.", "objects": []})
+        return json.dumps({"message": f"No objects found containing '{search_text}'."})
     return json.dumps({"count": len(results), "objects": results})
 
 
-# All board tools exported as a list
+# All board tools exported as a list (9 tools)
 BOARD_TOOLS = [
     get_board_layout,
-    find_free_space,
-    find_position_near,
-    list_board_objects,
     find_objects_by_text,
     create_sticky_note,
     create_shape,
     create_frame,
     create_text,
     create_connector,
-    move_object,
-    update_text,
-    change_color,
+    update_object,
     delete_object,
-    resize_object,
 ]
