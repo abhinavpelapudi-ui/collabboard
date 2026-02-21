@@ -43,6 +43,24 @@ export function useSocket(boardId: string, onRoleChanged?: (role: BoardRole) => 
     socket.on('connect_error', () => setConnected(false))
     socket.on('reconnect', () => { setConnected(true); socket.emit('board:join', { boardId }) })
     socket.on('board:state', ({ objects }) => {
+      // Normalize: shift objects into positive coordinate space if any have negative positions
+      if (objects?.length > 0) {
+        let minX = 0, minY = 0
+        for (const obj of objects) {
+          if (obj.type === 'connector') continue
+          if (obj.x < minX) minX = obj.x
+          if (obj.y < minY) minY = obj.y
+        }
+        if (minX < 0 || minY < 0) {
+          const shiftX = minX < 0 ? Math.abs(minX) + 100 : 0
+          const shiftY = minY < 0 ? Math.abs(minY) + 100 : 0
+          for (const obj of objects) {
+            if (obj.type === 'connector') continue
+            obj.x += shiftX
+            obj.y += shiftY
+          }
+        }
+      }
       setObjects(objects)
       if (objects?.length > 0) setTimeout(() => triggerFit(), 100)
     })

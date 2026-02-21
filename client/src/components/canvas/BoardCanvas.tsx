@@ -24,9 +24,10 @@ interface Props {
   socketRef: React.MutableRefObject<Socket | null>
 }
 
-// Fixed canvas dimensions
-const CANVAS_WIDTH = 4000
-const CANVAS_HEIGHT = 3000
+// Minimum canvas dimensions — grows dynamically to fit all objects
+const MIN_CANVAS_WIDTH = 4000
+const MIN_CANVAS_HEIGHT = 3000
+const CANVAS_PADDING = 500 // extra space beyond outermost objects
 
 function newId() { return crypto.randomUUID() }
 
@@ -60,8 +61,8 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
     const allObjects = Array.from(objects.values()).filter(o => o.type !== 'connector')
     if (allObjects.length === 0) {
       // Center the canvas in the viewport
-      container.scrollLeft = (CANVAS_WIDTH - container.clientWidth) / 2
-      container.scrollTop = (CANVAS_HEIGHT - container.clientHeight) / 2
+      container.scrollLeft = (MIN_CANVAS_WIDTH - container.clientWidth) / 2
+      container.scrollTop = (MIN_CANVAS_HEIGHT - container.clientHeight) / 2
       return
     }
 
@@ -261,6 +262,15 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
 
   const objectList = Array.from(objects.values()).sort((a, b) => a.z_index - b.z_index)
 
+  // Dynamic canvas size: expand to fit all objects with padding
+  let canvasWidth = MIN_CANVAS_WIDTH
+  let canvasHeight = MIN_CANVAS_HEIGHT
+  for (const obj of objects.values()) {
+    if (obj.type === 'connector') continue
+    canvasWidth = Math.max(canvasWidth, obj.x + obj.width + CANVAS_PADDING)
+    canvasHeight = Math.max(canvasHeight, obj.y + obj.height + CANVAS_PADDING)
+  }
+
   const cursorStyle = ['sticky', 'rect', 'circle', 'frame', 'text', 'connect'].includes(activeTool)
     ? 'crosshair'
     : 'default'
@@ -287,8 +297,8 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
 
       <Stage
         ref={stageRef}
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
+        width={canvasWidth}
+        height={canvasHeight}
         onMouseMove={onMouseMove}
         onMouseDown={onMouseDown}
         onMouseUp={onMouseUp}
@@ -299,7 +309,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
           {/* Canvas background */}
           <KonvaRect
             x={0} y={0}
-            width={CANVAS_WIDTH} height={CANVAS_HEIGHT}
+            width={canvasWidth} height={canvasHeight}
             fill="#111827"
             listening={false}
           />
