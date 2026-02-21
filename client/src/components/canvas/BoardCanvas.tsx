@@ -37,6 +37,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
   } = useUIStore()
 
   const [pendingConnectorSource, setPendingConnectorSource] = useState<string | null>(null)
+  const [stageSize, setStageSize] = useState({ width: window.innerWidth, height: window.innerHeight })
 
   // Drag-select state
   const isDragSelecting = useRef(false)
@@ -47,12 +48,55 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
     if (activeTool !== 'connect') setPendingConnectorSource(null)
   }, [activeTool])
 
+  // Keep stage size in sync with window
+  useEffect(() => {
+    const onResize = () => setStageSize({ width: window.innerWidth, height: window.innerHeight })
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
   useEffect(() => {
     if (!fitRequest || !stageRef.current) return
-    stageRef.current.position({ x: 0, y: 0 })
-    stageRef.current.scale({ x: 1, y: 1 })
-    stageRef.current.batchDraw()
-  }, [fitRequest])
+    const stage = stageRef.current
+
+    // Calculate bounding box of all objects
+    const allObjects = Array.from(objects.values()).filter(o => o.type !== 'connector')
+    if (allObjects.length === 0) {
+      stage.position({ x: 0, y: 0 })
+      stage.scale({ x: 1, y: 1 })
+      stage.batchDraw()
+      return
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const obj of allObjects) {
+      minX = Math.min(minX, obj.x)
+      minY = Math.min(minY, obj.y)
+      maxX = Math.max(maxX, obj.x + obj.width)
+      maxY = Math.max(maxY, obj.y + obj.height)
+    }
+
+    const contentW = maxX - minX
+    const contentH = maxY - minY
+    const stageW = stage.width()
+    const stageH = stage.height()
+    const padding = 80 // px padding around content
+
+    // Scale to fit with padding
+    const scaleX = (stageW - padding * 2) / contentW
+    const scaleY = (stageH - padding * 2) / contentH
+    const newScale = Math.min(scaleX, scaleY, 2) // cap at 2x zoom
+
+    // Center the content
+    const centerX = (minX + maxX) / 2
+    const centerY = (minY + maxY) / 2
+    const newX = stageW / 2 - centerX * newScale
+    const newY = stageH / 2 - centerY * newScale
+
+    stage.scale({ x: newScale, y: newScale })
+    stage.position({ x: newX, y: newY })
+    stage.batchDraw()
+  }, [fitRequest, objects])
 
   // Non-passive wheel for zoom
   useEffect(() => {
@@ -285,8 +329,8 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
 
       <Stage
         ref={stageRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={stageSize.width}
+        height={stageSize.height}
         draggable={activeTool === 'pan'}
         onMouseMove={onMouseMove}
         onMouseDown={onMouseDown}
