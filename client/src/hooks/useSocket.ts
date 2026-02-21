@@ -43,8 +43,15 @@ export function useSocket(boardId: string, onRoleChanged?: (role: BoardRole) => 
     socket.on('connect_error', () => setConnected(false))
     socket.on('reconnect', () => { setConnected(true); socket.emit('board:join', { boardId }) })
     socket.on('board:state', ({ objects }) => {
-      // Normalize: shift objects into positive coordinate space if any have negative positions
+      console.log(`[board:state] Received ${objects?.length ?? 0} objects`)
       if (objects?.length > 0) {
+        // Log positions for debugging
+        for (const obj of objects) {
+          if (obj.type === 'connector') continue
+          console.log(`  [${obj.type}] id=${obj.id.slice(0,8)} x=${obj.x} y=${obj.y} w=${obj.width} h=${obj.height}`)
+        }
+
+        // Normalize: shift objects into positive coordinate space if any have negative positions
         let minX = 0, minY = 0
         for (const obj of objects) {
           if (obj.type === 'connector') continue
@@ -54,6 +61,7 @@ export function useSocket(boardId: string, onRoleChanged?: (role: BoardRole) => 
         if (minX < 0 || minY < 0) {
           const shiftX = minX < 0 ? Math.abs(minX) + 100 : 0
           const shiftY = minY < 0 ? Math.abs(minY) + 100 : 0
+          console.log(`  Shifting objects by (${shiftX}, ${shiftY}) to fix negative coords`)
           for (const obj of objects) {
             if (obj.type === 'connector') continue
             obj.x += shiftX
@@ -61,8 +69,8 @@ export function useSocket(boardId: string, onRoleChanged?: (role: BoardRole) => 
           }
         }
       }
-      setObjects(objects)
-      if (objects?.length > 0) setTimeout(() => triggerFit(), 100)
+      setObjects(objects || [])
+      if (objects?.length > 0) setTimeout(() => triggerFit(), 200)
     })
     socket.on('cursor:move', (cursor) => updateCursor(cursor))
     socket.on('cursor:leave', ({ userId }) => removeCursor(userId))
