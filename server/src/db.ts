@@ -20,5 +20,22 @@ export async function runMigrations() {
     ALTER TABLE chat_messages
     ADD COLUMN IF NOT EXISTS message_type TEXT NOT NULL DEFAULT 'chat'
   `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS documents (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      board_id    UUID NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+      file_name   TEXT NOT NULL,
+      file_type   TEXT NOT NULL,
+      content     TEXT NOT NULL DEFAULT '',
+      metadata    JSONB DEFAULT '{}',
+      uploaded_by TEXT REFERENCES users(id),
+      created_at  TIMESTAMPTZ DEFAULT now()
+    )
+  `)
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_documents_board ON documents(board_id)
+  `)
+
   console.log('✅ DB migrations applied')
 }

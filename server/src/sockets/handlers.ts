@@ -10,7 +10,7 @@ const presence = new Map<string, Map<string, PresenceUser & { socketId: string }
 
 const TYPE_LABELS: Record<string, string> = {
   sticky: 'sticky note', rect: 'rectangle', circle: 'circle',
-  frame: 'frame', text: 'text', connector: 'connector',
+  frame: 'frame', text: 'text', connector: 'connector', image: 'image',
 }
 
 async function emitAudit(

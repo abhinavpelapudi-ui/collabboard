@@ -12,6 +12,7 @@ import { trackRequest } from './middleware/requestStats'
 import boardsRouter from './routes/boards'
 import membersRouter from './routes/members'
 import aiRouter from './routes/ai'
+import agentRouter from './routes/agent'
 import authRouter from './routes/auth'
 import adminRouter from './routes/admin'
 import oauthRouter from './routes/oauth'
@@ -43,6 +44,7 @@ app.route('/api/auth', oauthRouter)
 app.route('/api/boards', boardsRouter)
 app.route('/api/boards/:id/members', membersRouter)
 app.route('/api/ai', aiRouter)
+app.route('/api/agent', agentRouter)
 app.route('/api/admin', adminRouter)
 app.route('/api/notifications', notificationsRouter)
 app.route('/api/workspaces', workspacesRouter)

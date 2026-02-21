@@ -1,6 +1,6 @@
 // ─── Board Objects ───────────────────────────────────────────────────────────
 
-export type ObjectType = 'sticky' | 'rect' | 'circle' | 'text' | 'frame' | 'connector'
+export type ObjectType = 'sticky' | 'rect' | 'circle' | 'text' | 'frame' | 'connector' | 'image'
 
 export interface BaseObject {
   id: string
@@ -60,6 +60,12 @@ export interface ConnectorObject extends BaseObject {
   color: string
 }
 
+export interface ImageObject extends BaseObject {
+  type: 'image'
+  src: string
+  alt: string
+}
+
 export type BoardObject =
   | StickyObject
   | RectObject
@@ -67,6 +73,7 @@ export type BoardObject =
   | TextObject
   | FrameObject
   | ConnectorObject
+  | ImageObject
 
 // ─── Board ───────────────────────────────────────────────────────────────────
 

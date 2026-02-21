@@ -1,0 +1,26 @@
+services:
+  python-agent:
+    build: ./python-agent
+    ports:
+      - "8000:8000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - LANGCHAIN_TRACING_V2=true
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-collabboard-agent}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_HOST=${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
+    volumes:
+      - chroma_data:/app/chroma_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  chroma_data:

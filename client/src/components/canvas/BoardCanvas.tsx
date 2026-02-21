@@ -7,7 +7,7 @@ import { useBoardStore } from '../../stores/boardStore'
 import { useUIStore } from '../../stores/uiStore'
 import {
   StickyObject, RectObject, CircleObject, FrameObject,
-  ConnectorObject, TextObject,
+  ConnectorObject, TextObject, ImageObject,
 } from '@collabboard/shared'
 import StickyNote from './StickyNote'
 import RectShape from './RectShape'
@@ -15,6 +15,7 @@ import CircleShape from './CircleShape'
 import FrameShape from './FrameShape'
 import ConnectorLine from './ConnectorLine'
 import TextShape from './TextShape'
+import ImageShape from './ImageShape'
 import CursorsLayer from './CursorsLayer'
 import SelectionTransformer from './SelectionTransformer'
 
@@ -318,6 +319,10 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
             )
             if (obj.type === 'text') return (
               <TextShape key={obj.id} object={obj as TextObject}
+                boardId={boardId} socketRef={socketRef} isSelected={sel} />
+            )
+            if (obj.type === 'image') return (
+              <ImageShape key={obj.id} object={obj as ImageObject}
                 boardId={boardId} socketRef={socketRef} isSelected={sel} />
             )
             return null
