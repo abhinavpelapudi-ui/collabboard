@@ -71,42 +71,42 @@ export default function ProjectModal({ workspaceId, project, onClose, onCreated,
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="bg-surface-raised border border-surface-border rounded-2xl w-full max-w-lg p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-semibold text-white mb-4">{isEdit ? 'Edit Project' : 'New Project'}</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Project Name</label>
+            <label className="text-xs text-slate-500 mb-1 block">Project Name</label>
             <input
               autoFocus
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="e.g. Surgery Department Optimization"
-              className="w-full bg-gray-800 text-white text-sm px-3 py-2.5 rounded-lg border border-gray-700 outline-none focus:border-indigo-500"
+              className="w-full bg-surface-overlay text-white text-sm px-3 py-2.5 rounded-lg border border-surface-border outline-none focus:border-indigo-500"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Description</label>
+            <label className="text-xs text-slate-500 mb-1 block">Description</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="What is this project about?"
               rows={3}
-              className="w-full bg-gray-800 text-white text-sm px-3 py-2.5 rounded-lg border border-gray-700 outline-none focus:border-indigo-500 resize-none"
+              className="w-full bg-surface-overlay text-white text-sm px-3 py-2.5 rounded-lg border border-surface-border outline-none focus:border-indigo-500 resize-none"
             />
           </div>
 
           {/* Industry + Color */}
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs text-gray-500 mb-1 block">Industry</label>
+              <label className="text-xs text-slate-500 mb-1 block">Industry</label>
               <select
                 value={industry}
                 onChange={e => setIndustry(e.target.value)}
-                className="w-full bg-gray-800 text-white text-sm px-3 py-2.5 rounded-lg border border-gray-700 outline-none"
+                className="w-full bg-surface-overlay text-white text-sm px-3 py-2.5 rounded-lg border border-surface-border outline-none"
               >
                 <option value="">Select industry...</option>
                 {INDUSTRIES.filter(Boolean).map(ind => (
@@ -115,7 +115,7 @@ export default function ProjectModal({ workspaceId, project, onClose, onCreated,
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Color</label>
+              <label className="text-xs text-slate-500 mb-1 block">Color</label>
               <div className="flex gap-1.5 flex-wrap mt-1">
                 {COLORS.map(c => (
                   <button
@@ -135,21 +135,21 @@ export default function ProjectModal({ workspaceId, project, onClose, onCreated,
           {/* Dates */}
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs text-gray-500 mb-1 block">Start Date</label>
+              <label className="text-xs text-slate-500 mb-1 block">Start Date</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
-                className="w-full bg-gray-800 text-white text-sm px-3 py-2.5 rounded-lg border border-gray-700 outline-none"
+                className="w-full bg-surface-overlay text-white text-sm px-3 py-2.5 rounded-lg border border-surface-border outline-none"
               />
             </div>
             <div className="flex-1">
-              <label className="text-xs text-gray-500 mb-1 block">End Date</label>
+              <label className="text-xs text-slate-500 mb-1 block">End Date</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
-                className="w-full bg-gray-800 text-white text-sm px-3 py-2.5 rounded-lg border border-gray-700 outline-none"
+                className="w-full bg-surface-overlay text-white text-sm px-3 py-2.5 rounded-lg border border-surface-border outline-none"
               />
             </div>
           </div>
@@ -158,7 +158,7 @@ export default function ProjectModal({ workspaceId, project, onClose, onCreated,
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="text-gray-400 hover:text-white text-sm px-4 py-2 rounded-lg">
+            <button type="button" onClick={onClose} className="text-slate-400 hover:text-white text-sm px-4 py-2 rounded-lg">
               Cancel
             </button>
             <button

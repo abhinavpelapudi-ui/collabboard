@@ -46,12 +46,12 @@ export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, work
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
       onClick={e => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm shadow-2xl p-6">
+      <div className="bg-surface-raised border border-surface-border rounded-2xl w-full max-w-sm shadow-2xl p-6">
         <h2 className="text-white font-semibold mb-4">Move to workspace</h2>
 
         <div className="space-y-2 mb-5">
           {/* Personal option */}
-          <label className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-gray-800 border-gray-700 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-500/10">
+          <label className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-surface-overlay border-surface-border has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-500/10">
             <input
               type="radio"
               name="workspace"
@@ -60,11 +60,11 @@ export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, work
               onChange={() => setSelected(null)}
               className="accent-indigo-500"
             />
-            <span className="text-sm text-gray-200">Personal (no workspace)</span>
+            <span className="text-sm text-slate-200">Personal (no workspace)</span>
           </label>
 
           {editable.map(ws => (
-            <label key={ws.id} className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-gray-800 border-gray-700 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-500/10">
+            <label key={ws.id} className="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors hover:bg-surface-overlay border-surface-border has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-500/10">
               <input
                 type="radio"
                 name="workspace"
@@ -73,12 +73,12 @@ export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, work
                 onChange={() => setSelected(ws.id)}
                 className="accent-indigo-500"
               />
-              <span className="text-sm text-gray-200 truncate">{ws.name}</span>
+              <span className="text-sm text-slate-200 truncate">{ws.name}</span>
             </label>
           ))}
 
           {editable.length === 0 && (
-            <p className="text-gray-500 text-sm text-center py-2">No workspaces available. Create one first.</p>
+            <p className="text-slate-500 text-sm text-center py-2">No workspaces available. Create one first.</p>
           )}
         </div>
 
@@ -94,7 +94,7 @@ export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, work
           </button>
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-xl text-sm font-medium transition-colors"
+            className="flex-1 bg-surface-overlay hover:bg-surface-hover text-slate-300 py-2 rounded-xl text-sm font-medium transition-colors"
           >
             Cancel
           </button>

@@ -20,9 +20,9 @@ function authHeaders() {
 }
 
 const roleBadge: Record<BoardRole, { label: string; className: string }> = {
-  owner: { label: 'Owner', className: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' },
-  editor: { label: 'Editor', className: 'text-blue-400 bg-blue-400/10 border-blue-400/20' },
-  viewer: { label: 'Viewer', className: 'text-gray-400 bg-gray-700 border-gray-600' },
+  owner: { label: 'Owner', className: 'text-amber-300 bg-amber-400/10 border-amber-400/20' },
+  editor: { label: 'Editor', className: 'text-sky-300 bg-sky-400/10 border-sky-400/20' },
+  viewer: { label: 'Viewer', className: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
 }
 
 export default function Dashboard() {
@@ -162,13 +162,20 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+    <div className="min-h-screen bg-surface text-white flex flex-col">
       {/* Header */}
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between flex-shrink-0">
-        <h1 className="text-xl font-bold text-white">CollabBoard</h1>
+      <header className="border-b border-surface-border px-6 py-4 flex items-center justify-between flex-shrink-0 bg-surface-raised/50 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-glow">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-white">CollabBoard</h1>
+        </div>
         <div className="flex items-center gap-3">
           {plan === 'free' && !loading && (
-            <span className={`text-xs px-2.5 py-1 rounded-full border ${atLimit ? 'text-amber-400 bg-amber-400/10 border-amber-400/30' : 'text-gray-400 bg-gray-800 border-gray-700'}`}>
+            <span className={`text-xs px-2.5 py-1 rounded-full border ${atLimit ? 'text-amber-400 bg-amber-400/10 border-amber-400/30' : 'text-slate-400 bg-surface-overlay border-surface-border'}`}>
               {ownedCount} / {FREE_BOARD_LIMIT} boards
               {atLimit && (
                 <button onClick={() => navigate('/pricing')} className="ml-1.5 text-amber-300 hover:text-white font-medium">
@@ -184,13 +191,13 @@ export default function Dashboard() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-56 flex-shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col py-4 overflow-y-auto">
-          <p className="text-xs text-gray-500 uppercase tracking-widest px-4 mb-2 font-medium">Workspaces</p>
+        <aside className="w-56 flex-shrink-0 bg-surface-raised border-r border-surface-border flex flex-col py-4 overflow-y-auto">
+          <p className="text-xs text-slate-500 uppercase tracking-widest px-4 mb-2 font-medium">Workspaces</p>
 
           {/* Personal */}
           <button
             onClick={() => selectWorkspace(null)}
-            className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors text-left ${!selectedWorkspaceId && !selectedProjectId ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}
+            className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors text-left ${!selectedWorkspaceId && !selectedProjectId ? 'bg-surface-overlay text-white' : 'text-slate-400 hover:bg-surface-hover hover:text-white'}`}
           >
             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -206,12 +213,12 @@ export default function Dashboard() {
 
             return (
               <div key={ws.id}>
-                <div className={`group flex items-center px-4 py-2 transition-colors ${isWsSelected ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}>
+                <div className={`group flex items-center px-4 py-2 transition-colors ${isWsSelected ? 'bg-surface-overlay text-white' : 'text-slate-400 hover:bg-surface-hover hover:text-white'}`}>
                   {/* Expand/collapse toggle */}
                   {wsProjects.length > 0 && (
                     <button
                       onClick={() => toggleWorkspaceExpand(ws.id)}
-                      className="text-gray-600 hover:text-gray-400 mr-1 flex-shrink-0"
+                      className="text-slate-600 hover:text-slate-400 mr-1 flex-shrink-0"
                     >
                       <svg className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                         <path d="M6 6l4 4-4 4V6z" />
@@ -231,7 +238,7 @@ export default function Dashboard() {
                   </button>
                   <button
                     onClick={() => setWorkspaceModal({ id: ws.id, name: ws.name, isOwner: ws.role === 'owner' })}
-                    className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-white transition-all flex-shrink-0 ml-1 p-0.5"
+                    className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-white transition-all flex-shrink-0 ml-1 p-0.5"
                     title="Workspace settings"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,7 +254,7 @@ export default function Dashboard() {
                     key={proj.id}
                     onClick={() => selectProject(proj.id)}
                     className={`w-full flex items-center gap-2 pl-10 pr-4 py-1.5 text-xs transition-colors text-left ${
-                      selectedProjectId === proj.id ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-800/60 hover:text-gray-300'
+                      selectedProjectId === proj.id ? 'bg-surface-overlay text-white' : 'text-slate-500 hover:bg-surface-hover hover:text-slate-300'
                     }`}
                   >
                     <div
@@ -262,7 +269,7 @@ export default function Dashboard() {
                 {isExpanded && (ws.role === 'owner' || ws.role === 'editor') && (
                   <button
                     onClick={() => setProjectModal(ws.id)}
-                    className="w-full flex items-center gap-1.5 pl-10 pr-4 py-1.5 text-[11px] text-gray-600 hover:text-gray-400 transition-colors text-left"
+                    className="w-full flex items-center gap-1.5 pl-10 pr-4 py-1.5 text-[11px] text-slate-600 hover:text-slate-400 transition-colors text-left"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -280,7 +287,7 @@ export default function Dashboard() {
               <form onSubmit={createWorkspace} className="space-y-1.5">
                 <input
                   autoFocus
-                  className="w-full bg-gray-800 text-white text-sm px-2.5 py-1.5 rounded-lg border border-indigo-500 outline-none"
+                  className="w-full bg-surface-overlay text-white text-sm px-2.5 py-1.5 rounded-lg border border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 outline-none"
                   placeholder="Workspace name"
                   value={newWsName}
                   onChange={e => setNewWsName(e.target.value)}
@@ -288,20 +295,20 @@ export default function Dashboard() {
                 />
                 <div className="flex gap-1.5">
                   <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs py-1 rounded transition-colors">Create</button>
-                  <button type="button" onClick={() => { setCreatingWorkspace(false); setNewWsName('') }} className="flex-1 text-gray-500 hover:text-white text-xs py-1 rounded hover:bg-gray-800 transition-colors">Cancel</button>
+                  <button type="button" onClick={() => { setCreatingWorkspace(false); setNewWsName('') }} className="flex-1 text-slate-500 hover:text-white text-xs py-1 rounded hover:bg-surface-overlay transition-colors">Cancel</button>
                 </div>
               </form>
             ) : (
               <button
                 onClick={() => setCreatingWorkspace(true)}
-                className="w-full flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 py-1.5 transition-colors"
+                className="w-full flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 py-1.5 transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 New workspace
                 {plan === 'free' && (
-                  <span className="ml-auto text-[10px] text-gray-600">
+                  <span className="ml-auto text-[10px] text-slate-600">
                     {workspaces.filter(w => w.role === 'owner').length}/1
                   </span>
                 )}
@@ -335,25 +342,25 @@ export default function Dashboard() {
                   )}
                 </div>
                 {headingSubtext && (
-                  <p className="text-xs text-gray-500 mt-0.5">{headingSubtext}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{headingSubtext}</p>
                 )}
               </div>
               <button
                 onClick={createBoard}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors text-white ${atLimit && !selectedWorkspaceId ? 'bg-gray-700 hover:bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-500'}`}
+                className={`px-4 py-2 rounded-xl font-medium transition-all text-white shadow-md hover:shadow-glow ${atLimit && !selectedWorkspaceId ? 'bg-surface-overlay hover:bg-surface-hover' : 'bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400'}`}
               >
                 + New Board
               </button>
             </div>
 
             {loading ? (
-              <div className="text-gray-400">Loading...</div>
+              <div className="text-slate-400">Loading...</div>
             ) : visibleBoards.length === 0 ? (
               <div className="text-center py-20">
-                <p className="text-gray-400 text-lg mb-4">
+                <p className="text-slate-400 text-lg mb-4">
                   {selectedProject ? `No boards in ${selectedProject.name} yet` : selectedWorkspace ? `No boards in ${selectedWorkspace.name} yet` : 'No personal boards yet'}
                 </p>
-                <button onClick={createBoard} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-medium">
+                <button onClick={createBoard} className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white px-6 py-3 rounded-xl font-medium shadow-md hover:shadow-glow transition-all">
                   Create your first board
                 </button>
               </div>
@@ -371,10 +378,10 @@ export default function Dashboard() {
                   return (
                     <div
                       key={board.id}
-                      className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-indigo-500 transition-colors cursor-pointer group"
+                      className="bg-surface-raised border border-surface-border rounded-xl p-5 hover:border-indigo-500/50 hover:shadow-card-hover transition-all cursor-pointer group shadow-card"
                       onClick={() => navigate(`/board/${board.id}`)}
                     >
-                      <div className="w-full h-28 bg-gray-800 rounded-lg mb-3 flex items-center justify-center text-gray-600 text-sm">
+                      <div className="w-full h-28 bg-surface-overlay rounded-lg mb-3 flex items-center justify-center text-slate-600 text-sm">
                         Board
                       </div>
 
@@ -390,18 +397,18 @@ export default function Dashboard() {
                                 <div
                                   key={c.user_id}
                                   title={c.name || c.email}
-                                  className={`w-6 h-6 rounded-full ${colors[i % colors.length]} border-2 border-gray-900 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0`}
+                                  className={`w-6 h-6 rounded-full ${colors[i % colors.length]} border-2 border-surface-raised flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0`}
                                 >
                                   {(c.name || c.email)[0].toUpperCase()}
                                 </div>
                               ))}
                               {extra > 0 && (
-                                <div className="w-6 h-6 rounded-full bg-gray-700 border-2 border-gray-900 flex items-center justify-center text-gray-300 text-[10px] font-bold flex-shrink-0">
+                                <div className="w-6 h-6 rounded-full bg-surface-overlay border-2 border-surface-raised flex items-center justify-center text-slate-300 text-[10px] font-bold flex-shrink-0">
                                   +{extra}
                                 </div>
                               )}
                             </div>
-                            <span className="text-xs text-gray-500 ml-2">
+                            <span className="text-xs text-slate-500 ml-2">
                               {board.contributors.length} contributor{board.contributors.length !== 1 ? 's' : ''}
                             </span>
                           </div>
@@ -411,7 +418,7 @@ export default function Dashboard() {
                       {editingId === board.id ? (
                         <input
                           autoFocus
-                          className="bg-gray-800 text-white text-sm font-medium w-full px-2 py-1 rounded border border-indigo-500 outline-none"
+                          className="bg-surface-overlay text-white text-sm font-medium w-full px-2 py-1 rounded border border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 outline-none"
                           value={editTitle}
                           onChange={e => setEditTitle(e.target.value)}
                           onKeyDown={e => {
@@ -426,7 +433,7 @@ export default function Dashboard() {
                       )}
 
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <p className="text-xs text-gray-500">{new Date(board.created_at).toLocaleDateString()}</p>
+                        <p className="text-xs text-slate-500">{new Date(board.created_at).toLocaleDateString()}</p>
                         <span className={`text-xs px-1.5 py-0.5 rounded border ${badge.className}`}>
                           {badge.label}
                         </span>
@@ -448,7 +455,7 @@ export default function Dashboard() {
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap">
                         {canEdit && (
                           <button
-                            className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 hover:bg-gray-700"
+                            className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-surface-overlay hover:bg-surface-hover"
                             onClick={e => { e.stopPropagation(); setEditingId(board.id); setEditTitle(board.title) }}
                           >
                             Rename
@@ -456,7 +463,7 @@ export default function Dashboard() {
                         )}
                         {isOwner && (
                           <button
-                            className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 hover:bg-gray-700"
+                            className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-surface-overlay hover:bg-surface-hover"
                             onClick={e => { e.stopPropagation(); setMoveBoard(board) }}
                           >
                             Move
@@ -464,14 +471,14 @@ export default function Dashboard() {
                         )}
                         {isOwner && (
                           <button
-                            className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded bg-gray-800 hover:bg-gray-700"
+                            className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded bg-surface-overlay hover:bg-surface-hover"
                             onClick={e => { e.stopPropagation(); deleteBoard(board.id) }}
                           >
                             Delete
                           </button>
                         )}
                         <button
-                          className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 ml-auto"
+                          className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-surface-overlay hover:bg-surface-hover ml-auto"
                           onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/board/${board.id}`); alert('Link copied!') }}
                         >
                           Copy link

@@ -94,7 +94,7 @@ export default function NotificationBell({ socket }: Props) {
       {/* Bell button */}
       <button
         onClick={handleOpen}
-        className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+        className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-surface-overlay transition-colors"
         aria-label="Notifications"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -110,8 +110,8 @@ export default function NotificationBell({ socket }: Props) {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+        <div className="absolute right-0 mt-2 w-80 bg-surface-raised border border-surface-border rounded-xl shadow-xl z-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-surface-border">
             <span className="text-sm font-semibold text-white">Notifications</span>
             {notifications.length > 0 && (
               <button onClick={markAllRead} className="text-xs text-indigo-400 hover:text-indigo-300">
@@ -122,13 +122,13 @@ export default function NotificationBell({ socket }: Props) {
 
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-8">No notifications yet</p>
+              <p className="text-slate-500 text-sm text-center py-8">No notifications yet</p>
             ) : (
               notifications.map(n => (
                 <button
                   key={n.id}
                   onClick={() => goToBoard(n.data.boardId)}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-0 ${!n.read_at ? 'bg-indigo-500/5' : ''}`}
+                  className={`w-full text-left px-4 py-3 hover:bg-surface-overlay transition-colors border-b border-surface-border/50 last:border-0 ${!n.read_at ? 'bg-indigo-500/5' : ''}`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.read_at ? 'bg-indigo-400' : 'bg-transparent'}`} />
@@ -136,9 +136,9 @@ export default function NotificationBell({ socket }: Props) {
                       <p className="text-sm text-white leading-snug">
                         <span className="font-medium">{n.data.sharedBy}</span> shared{' '}
                         <span className="font-medium">"{n.data.boardTitle}"</span> with you
-                        <span className="text-gray-400"> as {n.data.role}</span>
+                        <span className="text-slate-400"> as {n.data.role}</span>
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">{timeAgo(n.created_at)}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{timeAgo(n.created_at)}</p>
                     </div>
                   </div>
                 </button>

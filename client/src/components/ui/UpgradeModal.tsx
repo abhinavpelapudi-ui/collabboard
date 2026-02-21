@@ -13,7 +13,7 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
       onClick={onClose}
     >
       <div
-        className="bg-gray-900 border border-gray-700 rounded-2xl p-8 w-full max-w-sm shadow-2xl"
+        className="bg-surface-raised border border-surface-border rounded-2xl p-8 w-full max-w-sm shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Icon */}
@@ -24,7 +24,7 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
         </div>
 
         <h2 className="text-lg font-bold text-white mb-2">Board limit reached</h2>
-        <p className="text-gray-400 text-sm mb-6">
+        <p className="text-slate-400 text-sm mb-6">
           You've used all <span className="text-white font-medium">2 boards</span> included in the free plan.
           Upgrade to create unlimited boards.
         </p>
@@ -38,13 +38,13 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
           </button>
           <button
             onClick={() => { onClose(); navigate('/activate') }}
-            className="w-full bg-gray-800 hover:bg-gray-700 text-white py-2.5 rounded-xl font-medium text-sm transition-colors"
+            className="w-full bg-surface-overlay hover:bg-surface-hover text-white py-2.5 rounded-xl font-medium text-sm transition-colors"
           >
             Activate license key
           </button>
           <button
             onClick={onClose}
-            className="w-full text-gray-500 hover:text-gray-300 text-sm py-1.5 transition-colors"
+            className="w-full text-slate-500 hover:text-slate-300 text-sm py-1.5 transition-colors"
           >
             Not now
           </button>

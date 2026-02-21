@@ -292,7 +292,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
       style={{ background: '#0a0a1a', overscrollBehavior: 'contain' }}
     >
       {activeTool === 'connect' && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-gray-900 border border-indigo-500 rounded-xl px-4 py-2 text-sm text-indigo-300 shadow-lg pointer-events-none">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-surface-raised border border-indigo-500 rounded-xl px-4 py-2 text-sm text-indigo-300 shadow-lg pointer-events-none">
           {pendingConnectorSource
             ? 'Now click the second shape to connect — or press Escape to cancel'
             : 'Click a shape to start a connector'}
@@ -300,7 +300,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
       )}
 
       {selectedIds.length > 1 && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-gray-900 border border-gray-700 rounded-xl px-4 py-2 text-sm text-gray-300 shadow-lg pointer-events-none">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-surface-raised border border-surface-border rounded-xl px-4 py-2 text-sm text-slate-300 shadow-lg pointer-events-none">
           {selectedIds.length} objects selected · Delete to remove · Ctrl+D to duplicate
         </div>
       )}

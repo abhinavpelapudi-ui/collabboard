@@ -101,21 +101,21 @@ export default function ShareModal({ boardId, onClose }: Props) {
   const atMemberLimit = plan === 'free' && nonOwnerCount >= 3
 
   const roleBadgeColor: Record<BoardRole, string> = {
-    owner: 'text-yellow-400',
+    owner: 'text-amber-300',
     editor: 'text-blue-400',
-    viewer: 'text-gray-400',
+    viewer: 'text-slate-400',
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div
-        className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl"
+        className="bg-surface-raised border border-surface-border rounded-2xl w-full max-w-md mx-4 shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
           <h2 className="text-white font-semibold text-lg">Share Board</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-slate-400 hover:text-white text-xl leading-none">×</button>
         </div>
 
         <div className="px-6 py-4 space-y-5">
@@ -124,7 +124,7 @@ export default function ShareModal({ boardId, onClose }: Props) {
             <input
               readOnly
               value={window.location.href}
-              className="flex-1 bg-gray-800 text-gray-300 text-xs px-3 py-2 rounded-lg border border-gray-700 outline-none truncate"
+              className="flex-1 bg-surface-overlay text-slate-300 text-xs px-3 py-2 rounded-lg border border-surface-border outline-none truncate"
             />
             <button
               onClick={copyLink}
@@ -137,9 +137,9 @@ export default function ShareModal({ boardId, onClose }: Props) {
           {/* Invite by email */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Invite people</p>
+              <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Invite people</p>
               {plan === 'free' && (
-                <span className={`text-xs ${atMemberLimit ? 'text-amber-400' : 'text-gray-500'}`}>
+                <span className={`text-xs ${atMemberLimit ? 'text-amber-400' : 'text-slate-500'}`}>
                   {nonOwnerCount} / 3 members
                 </span>
               )}
@@ -156,20 +156,20 @@ export default function ShareModal({ boardId, onClose }: Props) {
                   value={email}
                   onChange={e => { setEmail(e.target.value); setError('') }}
                   onKeyDown={e => e.key === 'Enter' && invite()}
-                  className="flex-1 bg-gray-800 text-white text-sm px-3 py-2 rounded-lg border border-gray-700 focus:border-indigo-500 outline-none"
+                  className="flex-1 bg-surface-overlay text-white text-sm px-3 py-2 rounded-lg border border-surface-border focus:border-indigo-500 outline-none"
                 />
-                <div className="flex rounded-lg border border-gray-700 overflow-hidden text-xs">
+                <div className="flex rounded-lg border border-surface-border overflow-hidden text-xs">
                   <button
                     type="button"
                     onClick={() => setRole('editor')}
-                    className={`px-3 py-2 transition-colors ${role === 'editor' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+                    className={`px-3 py-2 transition-colors ${role === 'editor' ? 'bg-indigo-600 text-white' : 'bg-surface-overlay text-slate-400 hover:text-white'}`}
                   >
                     Editor
                   </button>
                   <button
                     type="button"
                     onClick={() => setRole('viewer')}
-                    className={`px-3 py-2 transition-colors border-l border-gray-700 ${role === 'viewer' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+                    className={`px-3 py-2 transition-colors border-l border-surface-border ${role === 'viewer' ? 'bg-indigo-600 text-white' : 'bg-surface-overlay text-slate-400 hover:text-white'}`}
                   >
                     Viewer
                   </button>
@@ -188,43 +188,43 @@ export default function ShareModal({ boardId, onClose }: Props) {
 
           {/* Member list */}
           <div>
-            <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wider">Members</p>
+            <p className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wider">Members</p>
             {loading ? (
-              <p className="text-gray-500 text-sm">Loading...</p>
+              <p className="text-slate-500 text-sm">Loading...</p>
             ) : (
               <ul className="space-y-2 max-h-48 overflow-y-auto">
                 {members.map(member => (
                   <li key={member.user_id} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs text-white font-medium flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-surface-overlay flex items-center justify-center text-xs text-white font-medium flex-shrink-0">
                       {member.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm truncate">{member.name}</p>
-                      <p className="text-gray-500 text-xs truncate">{member.email}</p>
+                      <p className="text-slate-500 text-xs truncate">{member.email}</p>
                     </div>
                     {member.role === 'owner' ? (
                       <span className={`text-xs font-medium ${roleBadgeColor.owner}`}>Owner</span>
                     ) : (
                       <div className="flex items-center gap-1.5">
-                        <div className="flex rounded-md border border-gray-700 overflow-hidden text-xs">
+                        <div className="flex rounded-md border border-surface-border overflow-hidden text-xs">
                           <button
                             type="button"
                             onClick={() => member.role !== 'editor' && changeRole(member.user_id, 'editor')}
-                            className={`px-2 py-1 transition-colors ${member.role === 'editor' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+                            className={`px-2 py-1 transition-colors ${member.role === 'editor' ? 'bg-blue-600 text-white' : 'bg-surface-overlay text-slate-400 hover:text-white'}`}
                           >
                             Editor
                           </button>
                           <button
                             type="button"
                             onClick={() => member.role !== 'viewer' && changeRole(member.user_id, 'viewer')}
-                            className={`px-2 py-1 transition-colors border-l border-gray-700 ${member.role === 'viewer' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+                            className={`px-2 py-1 transition-colors border-l border-surface-border ${member.role === 'viewer' ? 'bg-blue-600 text-white' : 'bg-surface-overlay text-slate-400 hover:text-white'}`}
                           >
                             Viewer
                           </button>
                         </div>
                         <button
                           onClick={() => removeMember(member.user_id)}
-                          className="text-gray-500 hover:text-red-400 text-xs px-1"
+                          className="text-slate-500 hover:text-red-400 text-xs px-1"
                           title="Remove member"
                         >
                           ✕
@@ -238,10 +238,10 @@ export default function ShareModal({ boardId, onClose }: Props) {
           </div>
 
           {/* Role legend */}
-          <div className="border-t border-gray-800 pt-3 space-y-1">
-            <p className="text-xs text-gray-500"><span className={`font-medium ${roleBadgeColor.owner}`}>Owner</span> — full control, can delete board and manage members</p>
-            <p className="text-xs text-gray-500"><span className={`font-medium ${roleBadgeColor.editor}`}>Editor</span> — can create and edit objects, rename board</p>
-            <p className="text-xs text-gray-500"><span className={`font-medium ${roleBadgeColor.viewer}`}>Viewer</span> — read-only, can see cursors and board state</p>
+          <div className="border-t border-surface-border pt-3 space-y-1">
+            <p className="text-xs text-slate-500"><span className={`font-medium ${roleBadgeColor.owner}`}>Owner</span> — full control, can delete board and manage members</p>
+            <p className="text-xs text-slate-500"><span className={`font-medium ${roleBadgeColor.editor}`}>Editor</span> — can create and edit objects, rename board</p>
+            <p className="text-xs text-slate-500"><span className={`font-medium ${roleBadgeColor.viewer}`}>Viewer</span> — read-only, can see cursors and board state</p>
           </div>
         </div>
       </div>

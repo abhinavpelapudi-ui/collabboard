@@ -80,11 +80,11 @@ export default function DashboardAIChat({ onNavigate }: Props) {
   }
 
   return (
-    <div className="fixed right-6 bottom-6 z-50 w-80 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[480px]">
+    <div className="fixed right-6 bottom-6 z-50 w-80 bg-surface-raised border border-surface-border rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[480px]">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
         <span className="text-sm font-semibold text-white">Board Navigator</span>
-        <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white text-sm">
+        <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-white text-sm">
           ✕
         </button>
       </div>
@@ -97,7 +97,7 @@ export default function DashboardAIChat({ onNavigate }: Props) {
               className={`max-w-[85%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-800 text-gray-200'
+                  : 'bg-surface-overlay text-slate-200'
               }`}
             >
               {msg.text}
@@ -114,7 +114,7 @@ export default function DashboardAIChat({ onNavigate }: Props) {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-gray-800 text-gray-400 px-3 py-2 rounded-xl text-xs">
+            <div className="bg-surface-overlay text-slate-400 px-3 py-2 rounded-xl text-xs">
               Searching...
             </div>
           </div>
@@ -122,14 +122,14 @@ export default function DashboardAIChat({ onNavigate }: Props) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-700 px-3 py-2">
+      <div className="border-t border-surface-border px-3 py-2">
         <div className="flex items-center gap-2">
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && sendQuery()}
             placeholder="Which board do you need?"
-            className="flex-1 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg border border-gray-700 focus:border-indigo-500 outline-none"
+            className="flex-1 bg-surface-overlay text-white text-xs px-3 py-2 rounded-lg border border-surface-border focus:border-indigo-500 outline-none"
             disabled={loading}
           />
           <button

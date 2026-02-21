@@ -19,9 +19,9 @@ interface Props {
 }
 
 const roleColors: Record<string, string> = {
-  owner: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
+  owner: 'text-amber-300 bg-amber-400/10 border-amber-400/20',
   editor: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-  viewer: 'text-gray-400 bg-gray-700 border-gray-600',
+  viewer: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
 }
 
 export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, onClose, onUpdated, onDeleted }: Props) {
@@ -128,11 +128,11 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
       onClick={e => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+      <div className="bg-surface-raised border border-surface-border rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
           <h2 className="text-white font-semibold text-base truncate">{workspaceName}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -140,12 +140,12 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-800 px-6">
+        <div className="flex border-b border-surface-border px-6">
           {(['members', 'general'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`py-3 mr-6 text-sm font-medium border-b-2 transition-colors capitalize ${tab === t ? 'border-indigo-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+              className={`py-3 mr-6 text-sm font-medium border-b-2 transition-colors capitalize ${tab === t ? 'border-indigo-500 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
             >
               {t}
             </button>
@@ -166,12 +166,12 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
                     value={inviteEmail}
                     onChange={e => setInviteEmail(e.target.value)}
                     required
-                    className="flex-1 bg-gray-800 text-white text-sm px-3 py-2 rounded-lg border border-gray-700 focus:border-indigo-500 outline-none"
+                    className="flex-1 bg-surface-overlay text-white text-sm px-3 py-2 rounded-lg border border-surface-border focus:border-indigo-500 outline-none"
                   />
                   <select
                     value={inviteRole}
                     onChange={e => setInviteRole(e.target.value as 'editor' | 'viewer')}
-                    className="bg-gray-800 text-white text-sm px-2 py-2 rounded-lg border border-gray-700 outline-none"
+                    className="bg-surface-overlay text-white text-sm px-2 py-2 rounded-lg border border-surface-border outline-none"
                   >
                     <option value="editor">Editor</option>
                     <option value="viewer">Viewer</option>
@@ -187,7 +187,7 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
               )}
 
               {loadingMembers ? (
-                <p className="text-gray-500 text-sm">Loading...</p>
+                <p className="text-slate-500 text-sm">Loading...</p>
               ) : (
                 <ul className="space-y-2">
                   {members.map(m => (
@@ -197,21 +197,21 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
                       </div>
                       <div className="flex-1 overflow-hidden">
                         <p className="text-sm text-white truncate">{m.name || m.email}</p>
-                        <p className="text-xs text-gray-500 truncate">{m.email}</p>
+                        <p className="text-xs text-slate-500 truncate">{m.email}</p>
                       </div>
                       {isOwner && m.user_id !== user?.userId ? (
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <select
                             value={m.role}
                             onChange={e => changeRole(m.user_id, e.target.value as 'editor' | 'viewer')}
-                            className="bg-gray-800 text-gray-300 text-xs px-1.5 py-1 rounded border border-gray-700 outline-none"
+                            className="bg-surface-overlay text-slate-300 text-xs px-1.5 py-1 rounded border border-surface-border outline-none"
                           >
                             <option value="editor">Editor</option>
                             <option value="viewer">Viewer</option>
                           </select>
                           <button
                             onClick={() => removeMember(m.user_id)}
-                            className="text-red-400 hover:text-red-300 text-xs px-1.5 py-1 rounded hover:bg-gray-800 transition-colors"
+                            className="text-red-400 hover:text-red-300 text-xs px-1.5 py-1 rounded hover:bg-surface-overlay transition-colors"
                           >
                             Remove
                           </button>
@@ -233,10 +233,10 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
             <>
               {isOwner && (
                 <form onSubmit={saveName} className="space-y-2">
-                  <label className="text-xs text-gray-400 uppercase tracking-wide">Workspace name</label>
+                  <label className="text-xs text-slate-400 uppercase tracking-wide">Workspace name</label>
                   <div className="flex gap-2">
                     <input
-                      className="flex-1 bg-gray-800 text-white px-3 py-2 rounded-lg border border-gray-700 focus:border-indigo-500 outline-none text-sm"
+                      className="flex-1 bg-surface-overlay text-white px-3 py-2 rounded-lg border border-surface-border focus:border-indigo-500 outline-none text-sm"
                       value={name}
                       onChange={e => setName(e.target.value)}
                       required
@@ -255,7 +255,7 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
               {isOwner && (
                 <div className="border border-red-900/50 rounded-xl p-4 space-y-3 mt-4">
                   <p className="text-sm text-red-400 font-medium">Danger zone</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-slate-500">
                     Deleting this workspace removes all member access. Boards will move to Personal.
                   </p>
                   {confirmDelete ? (
@@ -268,7 +268,7 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
                       </button>
                       <button
                         onClick={() => setConfirmDelete(false)}
-                        className="text-gray-400 hover:text-white text-sm px-3 py-1.5 rounded-lg hover:bg-gray-800 transition-colors"
+                        className="text-slate-400 hover:text-white text-sm px-3 py-1.5 rounded-lg hover:bg-surface-overlay transition-colors"
                       >
                         Cancel
                       </button>

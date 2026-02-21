@@ -14,7 +14,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   active: { bg: 'bg-green-500/10 border-green-500/20', text: 'text-green-400' },
   paused: { bg: 'bg-amber-500/10 border-amber-500/20', text: 'text-amber-400' },
   completed: { bg: 'bg-blue-500/10 border-blue-500/20', text: 'text-blue-400' },
-  archived: { bg: 'bg-gray-500/10 border-gray-500/20', text: 'text-gray-400' },
+  archived: { bg: 'bg-slate-500/10 border-slate-500/20', text: 'text-slate-400' },
 }
 
 const TASK_STATUS_COLORS: Record<string, string> = {
@@ -131,17 +131,17 @@ export default function ProjectPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <p className="text-gray-400">Loading project...</p>
+      <div className="min-h-screen bg-surface text-white flex items-center justify-center">
+        <p className="text-slate-400">Loading project...</p>
       </div>
     )
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-surface text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-400 mb-4">Project not found</p>
+          <p className="text-slate-400 mb-4">Project not found</p>
           <button onClick={() => navigate('/dashboard')} className="text-indigo-400 hover:text-indigo-300">
             Back to Dashboard
           </button>
@@ -165,10 +165,10 @@ export default function ProjectPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+    <div className="min-h-screen bg-surface text-white flex flex-col">
       {/* Header */}
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center gap-4">
-        <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-white text-sm">
+      <header className="border-b border-surface-border px-6 py-4 flex items-center gap-4">
+        <button onClick={() => navigate('/dashboard')} className="text-slate-400 hover:text-white text-sm">
           ← Dashboard
         </button>
         <div className="flex items-center gap-3 flex-1">
@@ -180,7 +180,7 @@ export default function ProjectPage() {
           </div>
           <div>
             <h1 className="text-lg font-semibold">{project.name}</h1>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
               {project.industry && <span>{project.industry}</span>}
               <span className={`px-1.5 py-0.5 rounded border ${statusStyle.bg} ${statusStyle.text}`}>
                 {project.status}
@@ -195,7 +195,7 @@ export default function ProjectPage() {
           <select
             value={project.status}
             onChange={e => updateProject({ status: e.target.value })}
-            className="bg-gray-800 text-white text-xs px-2 py-1.5 rounded-lg border border-gray-700"
+            className="bg-surface-overlay text-white text-xs px-2 py-1.5 rounded-lg border border-surface-border"
           >
             <option value="active">Active</option>
             <option value="paused">Paused</option>
@@ -206,7 +206,7 @@ export default function ProjectPage() {
       </header>
 
       {/* Tabs */}
-      <div className="border-b border-gray-800 px-6 flex gap-1">
+      <div className="border-b border-surface-border px-6 flex gap-1">
         {tabs.map(t => (
           <button
             key={t.id}
@@ -214,7 +214,7 @@ export default function ProjectPage() {
             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               tab === t.id
                 ? 'border-indigo-500 text-white'
-                : 'border-transparent text-gray-500 hover:text-gray-300'
+                : 'border-transparent text-slate-500 hover:text-slate-300'
             }`}
           >
             {t.label}
@@ -231,32 +231,32 @@ export default function ProjectPage() {
             <div className="space-y-6">
               {/* Stats cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                  <p className="text-xs text-gray-500 mb-1">Boards</p>
+                <div className="bg-surface-raised border border-surface-border rounded-xl p-4">
+                  <p className="text-xs text-slate-500 mb-1">Boards</p>
                   <p className="text-2xl font-bold">{boards.length}</p>
                 </div>
-                <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                  <p className="text-xs text-gray-500 mb-1">Total Tasks</p>
+                <div className="bg-surface-raised border border-surface-border rounded-xl p-4">
+                  <p className="text-xs text-slate-500 mb-1">Total Tasks</p>
                   <p className="text-2xl font-bold">{stats?.total_objects ?? 0}</p>
                 </div>
-                <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                  <p className="text-xs text-gray-500 mb-1">Completion</p>
+                <div className="bg-surface-raised border border-surface-border rounded-xl p-4">
+                  <p className="text-xs text-slate-500 mb-1">Completion</p>
                   <p className="text-2xl font-bold text-green-400">{completionPct}%</p>
                 </div>
-                <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                  <p className="text-xs text-gray-500 mb-1">Team Members</p>
+                <div className="bg-surface-raised border border-surface-border rounded-xl p-4">
+                  <p className="text-xs text-slate-500 mb-1">Team Members</p>
                   <p className="text-2xl font-bold">{members.length}</p>
                 </div>
               </div>
 
               {/* Progress bar */}
               {stats && stats.total_objects > 0 && (
-                <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                  <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                <div className="bg-surface-raised border border-surface-border rounded-xl p-4">
+                  <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
                     <span>Project Progress</span>
                     <span>{stats.done_count} / {stats.total_objects} tasks done</span>
                   </div>
-                  <div className="h-3 bg-gray-800 rounded-full overflow-hidden flex">
+                  <div className="h-3 bg-surface-overlay rounded-full overflow-hidden flex">
                     {stats.done_count > 0 && (
                       <div className="bg-green-500 h-full" style={{ width: `${(stats.done_count / stats.total_objects) * 100}%` }} />
                     )}
@@ -267,21 +267,21 @@ export default function ProjectPage() {
                       <div className="bg-cyan-500 h-full" style={{ width: `${(stats.review_count / stats.total_objects) * 100}%` }} />
                     )}
                   </div>
-                  <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                  <div className="flex gap-4 mt-2 text-xs text-slate-500">
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Done ({stats.done_count})</span>
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> In Progress ({stats.in_progress_count})</span>
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-cyan-500" /> Review ({stats.review_count})</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-500" /> To Do ({stats.todo_count})</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-500" /> To Do ({stats.todo_count})</span>
                   </div>
                 </div>
               )}
 
               {/* Description */}
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+              <div className="bg-surface-raised border border-surface-border rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Description</p>
+                  <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">Description</p>
                   {canEdit && !editingDesc && (
-                    <button onClick={() => setEditingDesc(true)} className="text-xs text-gray-500 hover:text-white">Edit</button>
+                    <button onClick={() => setEditingDesc(true)} className="text-xs text-slate-500 hover:text-white">Edit</button>
                   )}
                 </div>
                 {editingDesc ? (
@@ -290,7 +290,7 @@ export default function ProjectPage() {
                       autoFocus
                       value={descDraft}
                       onChange={e => setDescDraft(e.target.value)}
-                      className="w-full bg-gray-800 text-white text-sm p-3 rounded-lg border border-gray-700 outline-none resize-none min-h-[100px]"
+                      className="w-full bg-surface-overlay text-white text-sm p-3 rounded-lg border border-surface-border outline-none resize-none min-h-[100px]"
                     />
                     <div className="flex gap-2 mt-2">
                       <button
@@ -301,20 +301,20 @@ export default function ProjectPage() {
                       </button>
                       <button
                         onClick={() => { setDescDraft(project.description || ''); setEditingDesc(false) }}
-                        className="text-gray-500 hover:text-white text-xs px-3 py-1.5"
+                        className="text-slate-500 hover:text-white text-xs px-3 py-1.5"
                       >
                         Cancel
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-300">{project.description || 'No description yet.'}</p>
+                  <p className="text-sm text-slate-300">{project.description || 'No description yet.'}</p>
                 )}
               </div>
 
               {/* Member avatars */}
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-3">Team</p>
+              <div className="bg-surface-raised border border-surface-border rounded-xl p-4">
+                <p className="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3">Team</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   {members.map((m, i) => {
                     const colors = ['bg-indigo-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500', 'bg-cyan-500']
@@ -328,7 +328,7 @@ export default function ProjectPage() {
                       </div>
                     )
                   })}
-                  <button onClick={() => setTab('team')} className="text-xs text-gray-500 hover:text-gray-300 ml-1">
+                  <button onClick={() => setTab('team')} className="text-xs text-slate-500 hover:text-slate-300 ml-1">
                     Manage team →
                   </button>
                 </div>
@@ -349,7 +349,7 @@ export default function ProjectPage() {
               </div>
               {boards.length === 0 ? (
                 <div className="text-center py-16">
-                  <p className="text-gray-400 mb-4">No boards in this project yet</p>
+                  <p className="text-slate-400 mb-4">No boards in this project yet</p>
                   {canEdit && (
                     <button onClick={createBoard} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-medium">
                       Create first board
@@ -361,14 +361,14 @@ export default function ProjectPage() {
                   {boards.map(board => (
                     <div
                       key={board.id}
-                      className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-indigo-500 transition-colors cursor-pointer"
+                      className="bg-surface-raised border border-surface-border rounded-xl p-5 hover:border-indigo-500 transition-colors cursor-pointer"
                       onClick={() => navigate(`/board/${board.id}`)}
                     >
-                      <div className="w-full h-24 bg-gray-800 rounded-lg mb-3 flex items-center justify-center text-gray-600 text-sm">
+                      <div className="w-full h-24 bg-surface-overlay rounded-lg mb-3 flex items-center justify-center text-slate-600 text-sm">
                         Board
                       </div>
                       <p className="text-sm font-medium text-white truncate">{board.title}</p>
-                      <p className="text-xs text-gray-500 mt-1">{new Date(board.created_at).toLocaleDateString()}</p>
+                      <p className="text-xs text-slate-500 mt-1">{new Date(board.created_at).toLocaleDateString()}</p>
                     </div>
                   ))}
                 </div>
@@ -382,8 +382,8 @@ export default function ProjectPage() {
               <h2 className="text-lg font-semibold mb-6">Timeline</h2>
               {(!stats?.tasks || stats.tasks.filter(t => t.due_date).length === 0) ? (
                 <div className="text-center py-16">
-                  <p className="text-gray-400 mb-2">No tasks with due dates yet</p>
-                  <p className="text-xs text-gray-600">Add due dates to tasks in your boards using the AI agent or task properties</p>
+                  <p className="text-slate-400 mb-2">No tasks with due dates yet</p>
+                  <p className="text-xs text-slate-600">Add due dates to tasks in your boards using the AI agent or task properties</p>
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -408,9 +408,9 @@ export default function ProjectPage() {
                     }
 
                     return (
-                      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 overflow-x-auto">
+                      <div className="bg-surface-raised border border-surface-border rounded-xl p-4 overflow-x-auto">
                         {/* Date axis */}
-                        <div className="flex items-center justify-between text-xs text-gray-500 mb-4 px-40">
+                        <div className="flex items-center justify-between text-xs text-slate-500 mb-4 px-40">
                           <span>{new Date(minDate).toLocaleDateString()}</span>
                           <span>{new Date((minDate + maxDate) / 2).toLocaleDateString()}</span>
                           <span>{new Date(maxDate).toLocaleDateString()}</span>
@@ -418,7 +418,7 @@ export default function ProjectPage() {
 
                         {Array.from(byBoard.entries()).map(([boardId, tasks]) => (
                           <div key={boardId} className="mb-4">
-                            <p className="text-xs text-gray-400 font-medium mb-2 truncate">
+                            <p className="text-xs text-slate-400 font-medium mb-2 truncate">
                               {tasks[0]?.board_title || 'Board'}
                             </p>
                             {tasks.map(task => {
@@ -432,7 +432,7 @@ export default function ProjectPage() {
                                   onClick={() => navigate(`/board/${task.board_id}`)}
                                   title={`${task.text || task.title || 'Task'} — ${task.due_date} ${task.assigned_to ? `(${task.assigned_to})` : ''}`}
                                 >
-                                  <div className="absolute top-0 left-0 w-36 text-xs text-gray-400 truncate leading-8">
+                                  <div className="absolute top-0 left-0 w-36 text-xs text-slate-400 truncate leading-8">
                                     {task.text || task.title || 'Task'}
                                   </div>
                                   <div
@@ -466,12 +466,12 @@ export default function ProjectPage() {
               {/* Task list fallback */}
               {stats?.tasks && stats.tasks.length > 0 && (
                 <div className="mt-6">
-                  <h3 className="text-sm font-medium text-gray-400 mb-3">All Tasks</h3>
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl divide-y divide-gray-800">
+                  <h3 className="text-sm font-medium text-slate-400 mb-3">All Tasks</h3>
+                  <div className="bg-surface-raised border border-surface-border rounded-xl divide-y divide-surface-border">
                     {stats.tasks.slice(0, 50).map(task => (
                       <div
                         key={task.id}
-                        className="px-4 py-3 flex items-center gap-3 hover:bg-gray-800/50 cursor-pointer"
+                        className="px-4 py-3 flex items-center gap-3 hover:bg-surface-hover cursor-pointer"
                         onClick={() => navigate(`/board/${task.board_id}`)}
                       >
                         <div
@@ -479,14 +479,14 @@ export default function ProjectPage() {
                           style={{ backgroundColor: TASK_STATUS_COLORS[task.status || 'todo'] || '#6b7280' }}
                         />
                         <span className="text-sm text-white flex-1 truncate">{task.text || task.title || 'Untitled'}</span>
-                        <span className="text-xs text-gray-500">{task.board_title}</span>
+                        <span className="text-xs text-slate-500">{task.board_title}</span>
                         {task.assigned_to && <span className="text-xs text-indigo-400">{task.assigned_to}</span>}
-                        {task.due_date && <span className="text-xs text-gray-500">{new Date(task.due_date).toLocaleDateString()}</span>}
+                        {task.due_date && <span className="text-xs text-slate-500">{new Date(task.due_date).toLocaleDateString()}</span>}
                         {task.priority && (
                           <span className={`text-xs px-1.5 py-0.5 rounded ${
                             task.priority === 'high' ? 'text-red-400 bg-red-400/10' :
                             task.priority === 'medium' ? 'text-amber-400 bg-amber-400/10' :
-                            'text-gray-400 bg-gray-700'
+                            'text-slate-400 bg-surface-overlay'
                           }`}>
                             {task.priority}
                           </span>
@@ -506,19 +506,19 @@ export default function ProjectPage() {
 
               {/* Invite form */}
               {isOwner && (
-                <form onSubmit={inviteMember} className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider font-medium mb-3">Invite Member</p>
+                <form onSubmit={inviteMember} className="bg-surface-raised border border-surface-border rounded-xl p-4 mb-6">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3">Invite Member</p>
                   <div className="flex items-center gap-2">
                     <input
                       value={inviteEmail}
                       onChange={e => setInviteEmail(e.target.value)}
                       placeholder="Email address"
-                      className="flex-1 bg-gray-800 text-white text-sm px-3 py-2 rounded-lg border border-gray-700 outline-none focus:border-indigo-500"
+                      className="flex-1 bg-surface-overlay text-white text-sm px-3 py-2 rounded-lg border border-surface-border outline-none focus:border-indigo-500"
                     />
                     <select
                       value={inviteRole}
                       onChange={e => setInviteRole(e.target.value as 'editor' | 'viewer')}
-                      className="bg-gray-800 text-white text-sm px-3 py-2 rounded-lg border border-gray-700"
+                      className="bg-surface-overlay text-white text-sm px-3 py-2 rounded-lg border border-surface-border"
                     >
                       <option value="editor">Editor</option>
                       <option value="viewer">Viewer</option>
@@ -532,7 +532,7 @@ export default function ProjectPage() {
               )}
 
               {/* Member list */}
-              <div className="bg-gray-900 border border-gray-800 rounded-xl divide-y divide-gray-800">
+              <div className="bg-surface-raised border border-surface-border rounded-xl divide-y divide-surface-border">
                 {members.map((m, i) => {
                   const colors = ['bg-indigo-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500', 'bg-cyan-500']
                   // Count tasks assigned to this member
@@ -544,22 +544,22 @@ export default function ProjectPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-white truncate">{m.name || m.email}</p>
-                        <p className="text-xs text-gray-500">{m.email}</p>
+                        <p className="text-xs text-slate-500">{m.email}</p>
                       </div>
                       <span className={`text-xs px-1.5 py-0.5 rounded border ${
-                        m.role === 'owner' ? 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' :
-                        m.role === 'editor' ? 'text-blue-400 bg-blue-400/10 border-blue-400/20' :
-                        'text-gray-400 bg-gray-700 border-gray-600'
+                        m.role === 'owner' ? 'text-amber-300 bg-amber-400/10 border-amber-400/20' :
+                        m.role === 'editor' ? 'text-sky-300 bg-sky-400/10 border-sky-400/20' :
+                        'text-slate-400 bg-slate-500/10 border-slate-500/20'
                       }`}>
                         {m.role}
                       </span>
                       {memberTasks.length > 0 && (
-                        <span className="text-xs text-gray-500">{memberTasks.length} tasks</span>
+                        <span className="text-xs text-slate-500">{memberTasks.length} tasks</span>
                       )}
                       {isOwner && m.role !== 'owner' && m.user_id !== user?.userId && (
                         <button
                           onClick={() => removeMember(m.user_id)}
-                          className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded bg-gray-800 hover:bg-gray-700"
+                          className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded bg-surface-overlay hover:bg-surface-hover"
                         >
                           Remove
                         </button>
@@ -572,30 +572,30 @@ export default function ProjectPage() {
               {/* Who's working on what */}
               {stats?.tasks && stats.tasks.filter(t => t.assigned_to).length > 0 && (
                 <div className="mt-6">
-                  <h3 className="text-sm font-medium text-gray-400 mb-3">Who's Working on What</h3>
+                  <h3 className="text-sm font-medium text-slate-400 mb-3">Who's Working on What</h3>
                   <div className="space-y-4">
                     {stats.assignees.map(assignee => {
                       const tasks = stats.tasks.filter(t => t.assigned_to === assignee)
                       const doneTasks = tasks.filter(t => t.status === 'done').length
                       return (
-                        <div key={assignee} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                        <div key={assignee} className="bg-surface-raised border border-surface-border rounded-xl p-4">
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-sm font-medium text-white">{assignee}</span>
-                            <span className="text-xs text-gray-500">{doneTasks}/{tasks.length} done</span>
+                            <span className="text-xs text-slate-500">{doneTasks}/{tasks.length} done</span>
                           </div>
                           <div className="space-y-1">
                             {tasks.slice(0, 10).map(task => (
                               <div
                                 key={task.id}
-                                className="flex items-center gap-2 text-xs cursor-pointer hover:bg-gray-800/50 px-2 py-1 rounded"
+                                className="flex items-center gap-2 text-xs cursor-pointer hover:bg-surface-hover px-2 py-1 rounded"
                                 onClick={() => navigate(`/board/${task.board_id}`)}
                               >
                                 <div
                                   className="w-2 h-2 rounded-full flex-shrink-0"
                                   style={{ backgroundColor: TASK_STATUS_COLORS[task.status || 'todo'] || '#6b7280' }}
                                 />
-                                <span className="text-gray-300 flex-1 truncate">{task.text || task.title || 'Untitled'}</span>
-                                <span className="text-gray-600">{task.board_title}</span>
+                                <span className="text-slate-300 flex-1 truncate">{task.text || task.title || 'Untitled'}</span>
+                                <span className="text-slate-600">{task.board_title}</span>
                               </div>
                             ))}
                           </div>

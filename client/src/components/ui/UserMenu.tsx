@@ -16,7 +16,7 @@ function initials(name: string) {
 }
 
 const planColors: Record<string, string> = {
-  free: 'text-gray-400 bg-gray-700',
+  free: 'text-slate-400 bg-surface-overlay',
   pro: 'text-indigo-300 bg-indigo-500/20',
   business: 'text-amber-300 bg-amber-500/20',
   enterprise: 'text-purple-300 bg-purple-500/20',
@@ -57,10 +57,10 @@ export default function UserMenu({ user }: Props) {
           <img
             src={avatarUrl}
             alt={user.name}
-            className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-700 hover:ring-indigo-500 transition-all"
+            className="w-8 h-8 rounded-full object-cover ring-2 ring-surface-border hover:ring-indigo-500 transition-all"
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-gray-700 hover:ring-indigo-500 transition-all">
+          <div className="w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-surface-border hover:ring-indigo-500 transition-all">
             {initials(user.name || user.email)}
           </div>
         )}
@@ -68,9 +68,9 @@ export default function UserMenu({ user }: Props) {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-56 bg-surface-raised border border-surface-border rounded-xl shadow-xl z-50 overflow-hidden">
           {/* User info */}
-          <div className="px-4 py-3 border-b border-gray-800">
+          <div className="px-4 py-3 border-b border-surface-border">
             <div className="flex items-center gap-3">
               {avatarUrl ? (
                 <img src={avatarUrl} alt={user.name} className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
@@ -81,7 +81,7 @@ export default function UserMenu({ user }: Props) {
               )}
               <div className="overflow-hidden">
                 <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                <p className="text-xs text-slate-400 truncate">{user.email}</p>
               </div>
             </div>
             <span className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full font-medium ${planColors[plan]}`}>
@@ -93,22 +93,22 @@ export default function UserMenu({ user }: Props) {
           <div className="py-1">
             <button
               onClick={() => { setOpen(false); navigate('/pricing') }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-surface-overlay hover:text-white transition-colors"
             >
               Pricing & plans
             </button>
             <button
               onClick={() => { setOpen(false); navigate('/activate') }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-surface-overlay hover:text-white transition-colors"
             >
               Activate license key
             </button>
           </div>
 
-          <div className="border-t border-gray-800 py-1">
+          <div className="border-t border-surface-border py-1">
             <button
               onClick={signOut}
-              className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-surface-overlay hover:text-red-300 transition-colors"
             >
               Sign out
             </button>

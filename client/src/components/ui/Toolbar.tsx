@@ -34,7 +34,7 @@ export default function Toolbar() {
   }, [setActiveTool])
 
   return (
-    <div className="absolute left-1/2 -translate-x-1/2 bottom-6 z-20 flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-2xl px-3 py-2 shadow-xl">
+    <div className="absolute left-1/2 -translate-x-1/2 bottom-6 z-20 flex items-center gap-1 bg-surface-raised border border-surface-border rounded-2xl px-3 py-2 shadow-xl">
       {/* Tools */}
       {tools.map(tool => (
         <button
@@ -44,7 +44,7 @@ export default function Toolbar() {
           className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
             activeTool === tool.key
               ? 'bg-indigo-600 text-white shadow-lg'
-              : 'text-gray-300 hover:bg-gray-800'
+              : 'text-slate-300 hover:bg-surface-overlay'
           }`}
         >
           {tool.icon}
@@ -52,7 +52,7 @@ export default function Toolbar() {
       ))}
 
       {/* Divider */}
-      <div className="w-px h-8 bg-gray-700 mx-1" />
+      <div className="w-px h-8 bg-surface-border mx-1" />
 
       {/* Color picker */}
       <div className="flex items-center gap-1">
@@ -69,14 +69,14 @@ export default function Toolbar() {
       </div>
 
       {/* Divider */}
-      <div className="w-px h-8 bg-gray-700 mx-1" />
+      <div className="w-px h-8 bg-surface-border mx-1" />
 
       {/* AI Toggle */}
       <button
         onClick={toggleAIPanel}
         title="AI Agent (A)"
         className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
-          showAIPanel ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-300 hover:bg-gray-800'
+          showAIPanel ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-surface-overlay'
         }`}
       >
         ✦

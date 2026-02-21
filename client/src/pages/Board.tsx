@@ -139,18 +139,18 @@ export default function Board() {
   if (!boardId) return null
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-gray-950 flex flex-col">
+    <div className="w-screen h-screen overflow-hidden bg-surface flex flex-col">
       {/* Top bar */}
-      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2 bg-gray-900/80 backdrop-blur border-b border-gray-800">
+      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2 bg-surface-raised/80 backdrop-blur-sm border-b border-surface-border">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/dashboard')} className="text-gray-400 hover:text-white text-sm">
+          <button onClick={() => navigate('/dashboard')} className="text-slate-400 hover:text-white text-sm">
             ← Boards
           </button>
 
           {canEdit && editingTitle ? (
             <input
               autoFocus
-              className="bg-gray-800 text-white text-sm font-medium px-2 py-1 rounded border border-indigo-500 outline-none min-w-[200px]"
+              className="bg-surface-overlay text-white text-sm font-medium px-2 py-1 rounded border border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 outline-none min-w-[200px]"
               value={titleValue}
               onChange={e => setTitleValue(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false) }}
@@ -166,7 +166,7 @@ export default function Board() {
           )}
 
           {isViewer && (
-            <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full border border-gray-700">
+            <span className="text-xs text-slate-500 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border">
               View only
             </span>
           )}
@@ -176,14 +176,14 @@ export default function Board() {
           <PresenceBar />
           {role === 'owner' && (
             <button
-              className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-800"
+              className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-surface-overlay hover:bg-surface-hover transition-colors"
               onClick={() => setShowShare(true)}
             >
               Manage access
             </button>
           )}
           <button
-            className={`relative text-xs px-2 py-1 rounded bg-gray-800 transition-colors ${showChat ? 'text-indigo-400 ring-1 ring-indigo-500' : 'text-gray-400 hover:text-white'}`}
+            className={`relative text-xs px-2 py-1 rounded transition-colors ${showChat ? 'bg-indigo-600/20 text-indigo-400 ring-1 ring-indigo-500' : 'bg-surface-overlay text-slate-400 hover:text-white hover:bg-surface-hover'}`}
             onClick={() => { setShowChat(s => !s); setUnreadChat(0); setShowActivity(false) }}
             title="Board chat"
           >
@@ -195,14 +195,14 @@ export default function Board() {
             )}
           </button>
           <button
-            className={`text-xs px-2 py-1 rounded bg-gray-800 transition-colors ${showActivity ? 'text-amber-400 ring-1 ring-amber-500' : 'text-gray-400 hover:text-white'}`}
+            className={`text-xs px-2 py-1 rounded transition-colors ${showActivity ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500' : 'bg-surface-overlay text-slate-400 hover:text-white hover:bg-surface-hover'}`}
             onClick={() => { setShowActivity(s => !s); setShowChat(false) }}
             title="Activity log"
           >
             📋 Activity
           </button>
           <button
-            className={`text-xs px-2 py-1 rounded bg-gray-800 transition-colors ${showDocs ? 'text-emerald-400 ring-1 ring-emerald-500' : 'text-gray-400 hover:text-white'}`}
+            className={`text-xs px-2 py-1 rounded transition-colors ${showDocs ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500' : 'bg-surface-overlay text-slate-400 hover:text-white hover:bg-surface-hover'}`}
             onClick={() => setShowDocs(s => !s)}
             title="Documents"
           >
@@ -273,7 +273,7 @@ export default function Board() {
 
       {/* Embedded document editor overlay */}
       {activeDocId && (
-        <div className="absolute inset-0 z-40 bg-gray-950/95 backdrop-blur-sm">
+        <div className="absolute inset-0 z-40 bg-surface/95 backdrop-blur-sm">
           <EmbeddedDocEditor
             boardId={boardId}
             docId={activeDocId}

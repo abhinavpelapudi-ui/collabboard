@@ -266,20 +266,20 @@ export default function AIChat({ boardId, socketRef }: Props) {
   }
 
   return (
-    <div className="absolute right-4 bottom-20 z-30 w-80 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div className="absolute right-4 bottom-20 z-30 w-80 bg-surface-raised border border-surface-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-700 flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-surface-border flex items-center gap-2">
         <span className="text-indigo-400">✦</span>
         <span className="text-sm font-semibold text-white">AI Board Agent</span>
       </div>
 
       {/* Model selector */}
       {availableModels.length > 0 && (
-        <div className="px-3 py-1.5 bg-gray-800/50 border-b border-gray-700">
+        <div className="px-3 py-1.5 bg-surface-overlay/50 border-b border-surface-border">
           <select
             value={selectedModel}
             onChange={e => setSelectedModel(e.target.value)}
-            className="w-full bg-gray-800 text-gray-200 text-xs rounded-md px-2 py-1.5 border border-gray-600 outline-none focus:border-emerald-500"
+            className="w-full bg-surface-overlay text-slate-200 text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none focus:border-emerald-500"
           >
             {availableModels.map(m => (
               <option key={m.model_id} value={m.model_id} disabled={!m.available}>
@@ -292,11 +292,11 @@ export default function AIChat({ boardId, socketRef }: Props) {
 
       {/* Uploaded file indicator */}
       {uploadedFile && (
-        <div className="px-3 py-1.5 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
+        <div className="px-3 py-1.5 bg-surface-overlay border-b border-surface-border flex items-center justify-between">
           <span className="text-xs text-emerald-400 truncate">📄 {uploadedFile}</span>
           <button
             onClick={() => setUploadedFile(null)}
-            className="text-gray-500 hover:text-gray-300 text-xs ml-2"
+            className="text-slate-500 hover:text-slate-300 text-xs ml-2"
           >
             ✕
           </button>
@@ -311,7 +311,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
               className={`text-sm rounded-xl px-3 py-2 ${
                 msg.role === 'user'
                   ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-800 text-gray-200'
+                  : 'bg-surface-overlay text-slate-200'
               }`}
             >
               {msg.text}
@@ -319,14 +319,14 @@ export default function AIChat({ boardId, socketRef }: Props) {
             {msg.role === 'assistant' && msg.traceId && (
               <div className="mt-1 flex items-center gap-1">
                 {feedback[msg.traceId] ? (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-slate-500">
                     {feedback[msg.traceId] === 'up' ? '👍' : '👎'} Thanks for your feedback!
                   </span>
                 ) : (
                   <>
                     <button
                       onClick={() => submitFeedback(msg, 'up')}
-                      className="text-xs text-gray-500 hover:text-emerald-400 px-1.5 py-0.5 rounded hover:bg-gray-800 transition-colors"
+                      className="text-xs text-slate-500 hover:text-emerald-400 px-1.5 py-0.5 rounded hover:bg-surface-overlay transition-colors"
                       title="Good response"
                     >
                       👍
@@ -339,7 +339,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
                           setShowCommentFor(msg.traceId!)
                         }
                       }}
-                      className="text-xs text-gray-500 hover:text-red-400 px-1.5 py-0.5 rounded hover:bg-gray-800 transition-colors"
+                      className="text-xs text-slate-500 hover:text-red-400 px-1.5 py-0.5 rounded hover:bg-surface-overlay transition-colors"
                       title="Bad response"
                     >
                       👎
@@ -351,7 +351,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
             {showCommentFor === msg.traceId && !feedback[msg.traceId!] && (
               <div className="mt-1 flex gap-1">
                 <input
-                  className="flex-1 bg-gray-800 text-white text-xs rounded-md px-2 py-1 outline-none border border-gray-600 focus:border-red-500"
+                  className="flex-1 bg-surface-overlay text-white text-xs rounded-md px-2 py-1 outline-none border border-surface-border focus:border-red-500"
                   placeholder="What went wrong? (optional)"
                   value={feedbackComment[msg.traceId!] || ''}
                   onChange={e => setFeedbackComment(prev => ({ ...prev, [msg.traceId!]: e.target.value }))}
@@ -363,7 +363,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
                 />
                 <button
                   onClick={() => submitFeedback(msg, 'down', feedbackComment[msg.traceId!] || '')}
-                  className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded-md transition-colors"
+                  className="text-xs bg-surface-overlay hover:bg-surface-hover text-slate-300 px-2 py-1 rounded-md transition-colors"
                 >
                   Send
                 </button>
@@ -372,7 +372,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
           </div>
         ))}
         {loading && (
-          <div className="bg-gray-800 text-gray-400 text-sm rounded-xl px-3 py-2 w-fit">
+          <div className="bg-surface-overlay text-slate-400 text-sm rounded-xl px-3 py-2 w-fit">
             Thinking...
           </div>
         )}
@@ -380,7 +380,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
       </div>
 
       {/* Input area */}
-      <div className="p-3 border-t border-gray-700 flex flex-col gap-2">
+      <div className="p-3 border-t border-surface-border flex flex-col gap-2">
         {selectedIds.length === 1 && (() => {
           const sel = objects.get(selectedIds[0])
           if (!sel || sel.type === 'connector') return null
@@ -393,7 +393,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
         })()}
         <div className="flex gap-2">
           <input
-            className="flex-1 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 outline-none border border-gray-600 focus:border-indigo-500"
+            className="flex-1 bg-surface-overlay text-white text-sm rounded-lg px-3 py-2 outline-none border border-surface-border focus:border-indigo-500"
             placeholder={isRecording ? 'Listening...' : selectedIds.length === 1 ? 'Ask about selected object...' : 'Tell AI what to do...'}
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -421,7 +421,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={loading}
-            className="flex-1 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 text-xs px-3 py-1.5 rounded-lg border border-gray-600 transition-colors"
+            className="flex-1 bg-surface-overlay hover:bg-surface-hover disabled:opacity-50 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-surface-border transition-colors"
             title="Upload PDF, DOCX, or TXT file"
           >
             📎 Upload File
@@ -432,7 +432,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
             className={`flex-1 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
               isRecording
                 ? 'bg-red-600/20 border-red-500 text-red-400 hover:bg-red-600/30'
-                : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                : 'bg-surface-overlay border-surface-border text-slate-300 hover:bg-surface-hover'
             } disabled:opacity-50`}
             title="Voice input (requires microphone)"
           >
