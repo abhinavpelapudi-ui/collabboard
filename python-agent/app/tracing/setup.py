@@ -58,8 +58,12 @@ def get_langfuse_handler():
             logger.warning("LangFuse callback handler not available — skipping")
             return None
 
-    return CallbackHandler(
-        secret_key=settings.langfuse_secret_key,
-        public_key=settings.langfuse_public_key,
-        host=settings.langfuse_host,
-    )
+    # Newer langfuse versions read from env vars automatically
+    try:
+        return CallbackHandler(
+            secret_key=settings.langfuse_secret_key,
+            public_key=settings.langfuse_public_key,
+            host=settings.langfuse_host,
+        )
+    except TypeError:
+        return CallbackHandler()
