@@ -47,7 +47,7 @@ export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, work
       onClick={e => { if (e.target === overlayRef.current) onClose() }}
     >
       <div className="bg-surface-raised border border-surface-border rounded-2xl w-full max-w-sm shadow-2xl p-6">
-        <h2 className="text-white font-semibold mb-4">Move to workspace</h2>
+        <h2 className="text-slate-900 font-semibold mb-4">Move to workspace</h2>
 
         <div className="space-y-2 mb-5">
           {/* Personal option */}
@@ -60,7 +60,7 @@ export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, work
               onChange={() => setSelected(null)}
               className="accent-indigo-500"
             />
-            <span className="text-sm text-slate-200">Personal (no workspace)</span>
+            <span className="text-sm text-slate-700">Personal (no workspace)</span>
           </label>
 
           {editable.map(ws => (
@@ -73,16 +73,16 @@ export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, work
                 onChange={() => setSelected(ws.id)}
                 className="accent-indigo-500"
               />
-              <span className="text-sm text-slate-200 truncate">{ws.name}</span>
+              <span className="text-sm text-slate-700 truncate">{ws.name}</span>
             </label>
           ))}
 
           {editable.length === 0 && (
-            <p className="text-slate-500 text-sm text-center py-2">No workspaces available. Create one first.</p>
+            <p className="text-slate-400 text-sm text-center py-2">No workspaces available. Create one first.</p>
           )}
         </div>
 
-        {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+        {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
 
         <div className="flex gap-2">
           <button
@@ -94,7 +94,7 @@ export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, work
           </button>
           <button
             onClick={onClose}
-            className="flex-1 bg-surface-overlay hover:bg-surface-hover text-slate-300 py-2 rounded-xl text-sm font-medium transition-colors"
+            className="flex-1 bg-surface-overlay hover:bg-surface-hover text-slate-600 py-2 rounded-xl text-sm font-medium transition-colors"
           >
             Cancel
           </button>

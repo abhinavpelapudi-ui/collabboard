@@ -44,7 +44,7 @@ export default function Toolbar() {
           className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
             activeTool === tool.key
               ? 'bg-indigo-600 text-white shadow-lg'
-              : 'text-slate-300 hover:bg-surface-overlay'
+              : 'text-slate-600 hover:bg-surface-overlay'
           }`}
         >
           {tool.icon}
@@ -76,7 +76,7 @@ export default function Toolbar() {
         onClick={toggleAIPanel}
         title="AI Agent (A)"
         className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
-          showAIPanel ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-surface-overlay'
+          showAIPanel ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 hover:bg-surface-overlay'
         }`}
       >
         ✦

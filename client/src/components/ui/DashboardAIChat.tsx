@@ -83,8 +83,8 @@ export default function DashboardAIChat({ onNavigate }: Props) {
     <div className="fixed right-6 bottom-6 z-50 w-80 bg-surface-raised border border-surface-border rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[480px]">
       {/* Header */}
       <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
-        <span className="text-sm font-semibold text-white">Board Navigator</span>
-        <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-white text-sm">
+        <span className="text-sm font-semibold text-slate-900">Board Navigator</span>
+        <button onClick={() => setOpen(false)} className="text-slate-500 hover:text-slate-900 text-sm">
           ✕
         </button>
       </div>
@@ -97,7 +97,7 @@ export default function DashboardAIChat({ onNavigate }: Props) {
               className={`max-w-[85%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-indigo-600 text-white'
-                  : 'bg-surface-overlay text-slate-200'
+                  : 'bg-surface-overlay text-slate-700'
               }`}
             >
               {msg.text}
@@ -114,7 +114,7 @@ export default function DashboardAIChat({ onNavigate }: Props) {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-surface-overlay text-slate-400 px-3 py-2 rounded-xl text-xs">
+            <div className="bg-surface-overlay text-slate-500 px-3 py-2 rounded-xl text-xs">
               Searching...
             </div>
           </div>
@@ -129,7 +129,7 @@ export default function DashboardAIChat({ onNavigate }: Props) {
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && sendQuery()}
             placeholder="Which board do you need?"
-            className="flex-1 bg-surface-overlay text-white text-xs px-3 py-2 rounded-lg border border-surface-border focus:border-indigo-500 outline-none"
+            className="flex-1 bg-surface-overlay text-slate-900 text-xs px-3 py-2 rounded-lg border border-surface-border focus:border-indigo-500 outline-none"
             disabled={loading}
           />
           <button

@@ -85,7 +85,7 @@ function StickyNote({ object, boardId, socketRef, isSelected }: Props) {
       />
       <Text
         text={object.text || 'Double-click to edit'}
-        fill={object.text ? '#1a1a1a' : '#9ca3af'}
+        fill={object.text ? '#1e293b' : '#94a3b8'}
         fontSize={object.font_size || Math.max(12, Math.min(18, object.width / 12))}
         padding={10}
         width={object.width}

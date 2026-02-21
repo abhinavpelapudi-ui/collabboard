@@ -16,7 +16,7 @@ export default function PresenceBar() {
         </div>
       ))}
       {users.length > 6 && (
-        <div className="w-8 h-8 rounded-full bg-surface-overlay flex items-center justify-center text-xs text-slate-300">
+        <div className="w-8 h-8 rounded-full bg-surface-overlay flex items-center justify-center text-xs text-slate-600">
           +{users.length - 6}
         </div>
       )}

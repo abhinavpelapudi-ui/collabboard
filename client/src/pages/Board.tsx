@@ -143,14 +143,14 @@ export default function Board() {
       {/* Top bar */}
       <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2 bg-surface-raised/80 backdrop-blur-sm border-b border-surface-border">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/dashboard')} className="text-slate-400 hover:text-white text-sm">
+          <button onClick={() => navigate('/dashboard')} className="text-slate-500 hover:text-slate-900 text-sm">
             ← Boards
           </button>
 
           {canEdit && editingTitle ? (
             <input
               autoFocus
-              className="bg-surface-overlay text-white text-sm font-medium px-2 py-1 rounded border border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 outline-none min-w-[200px]"
+              className="bg-surface-overlay text-slate-900 text-sm font-medium px-2 py-1 rounded border border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 outline-none min-w-[200px]"
               value={titleValue}
               onChange={e => setTitleValue(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false) }}
@@ -158,7 +158,7 @@ export default function Board() {
             />
           ) : (
             <span
-              className={`text-sm font-medium text-white ${canEdit ? 'cursor-pointer hover:text-indigo-300' : ''}`}
+              className={`text-sm font-medium text-slate-900 ${canEdit ? 'cursor-pointer hover:text-indigo-600' : ''}`}
               onClick={() => canEdit && setEditingTitle(true)}
             >
               {board?.title || 'Loading...'}
@@ -166,7 +166,7 @@ export default function Board() {
           )}
 
           {isViewer && (
-            <span className="text-xs text-slate-500 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border">
+            <span className="text-xs text-slate-400 bg-surface-overlay px-2 py-0.5 rounded-full border border-surface-border">
               View only
             </span>
           )}
@@ -176,14 +176,14 @@ export default function Board() {
           <PresenceBar />
           {role === 'owner' && (
             <button
-              className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-surface-overlay hover:bg-surface-hover transition-colors"
+              className="text-xs text-slate-500 hover:text-slate-900 px-2 py-1 rounded bg-surface-overlay hover:bg-surface-hover transition-colors"
               onClick={() => setShowShare(true)}
             >
               Manage access
             </button>
           )}
           <button
-            className={`relative text-xs px-2 py-1 rounded transition-colors ${showChat ? 'bg-indigo-600/20 text-indigo-400 ring-1 ring-indigo-500' : 'bg-surface-overlay text-slate-400 hover:text-white hover:bg-surface-hover'}`}
+            className={`relative text-xs px-2 py-1 rounded transition-colors ${showChat ? 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-500' : 'bg-surface-overlay text-slate-500 hover:text-slate-900 hover:bg-surface-hover'}`}
             onClick={() => { setShowChat(s => !s); setUnreadChat(0); setShowActivity(false) }}
             title="Board chat"
           >
@@ -195,14 +195,14 @@ export default function Board() {
             )}
           </button>
           <button
-            className={`text-xs px-2 py-1 rounded transition-colors ${showActivity ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500' : 'bg-surface-overlay text-slate-400 hover:text-white hover:bg-surface-hover'}`}
+            className={`text-xs px-2 py-1 rounded transition-colors ${showActivity ? 'bg-amber-50 text-amber-600 ring-1 ring-amber-500' : 'bg-surface-overlay text-slate-500 hover:text-slate-900 hover:bg-surface-hover'}`}
             onClick={() => { setShowActivity(s => !s); setShowChat(false) }}
             title="Activity log"
           >
             📋 Activity
           </button>
           <button
-            className={`text-xs px-2 py-1 rounded transition-colors ${showDocs ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500' : 'bg-surface-overlay text-slate-400 hover:text-white hover:bg-surface-hover'}`}
+            className={`text-xs px-2 py-1 rounded transition-colors ${showDocs ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-500' : 'bg-surface-overlay text-slate-500 hover:text-slate-900 hover:bg-surface-hover'}`}
             onClick={() => setShowDocs(s => !s)}
             title="Documents"
           >

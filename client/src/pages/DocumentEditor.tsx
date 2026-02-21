@@ -55,7 +55,7 @@ function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId:
     ],
     editorProps: {
       attributes: {
-        class: 'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[300px] px-8 py-6',
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[300px] px-8 py-6',
       },
     },
     onUpdate: ({ editor }) => {
@@ -91,13 +91,13 @@ function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId:
   }
 
   const wrapperClass = standalone
-    ? 'w-screen h-screen bg-gray-950 flex flex-col'
-    : 'w-full h-full bg-gray-950 flex flex-col'
+    ? 'w-screen h-screen bg-surface flex flex-col'
+    : 'w-full h-full bg-surface flex flex-col'
 
   if (loading) {
     return (
       <div className={`${wrapperClass} items-center justify-center`}>
-        <p className="text-gray-400 text-sm">Loading document...</p>
+        <p className="text-slate-500 text-sm">Loading document...</p>
       </div>
     )
   }
@@ -105,11 +105,11 @@ function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId:
   return (
     <div className={wrapperClass}>
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800">
+      <header className="flex items-center justify-between px-4 py-3 bg-surface-raised border-b border-surface-border">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-sm"
+            className="text-slate-500 hover:text-slate-900 text-sm"
           >
             {standalone ? '← Back to Board' : '← Close'}
           </button>
@@ -117,7 +117,7 @@ function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId:
           {editingTitle ? (
             <input
               autoFocus
-              className="bg-gray-800 text-white text-sm font-medium px-2 py-1 rounded border border-indigo-500 outline-none min-w-[200px]"
+              className="bg-surface-overlay text-slate-900 text-sm font-medium px-2 py-1 rounded border border-indigo-500 outline-none min-w-[200px]"
               value={title}
               onChange={e => setTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false) }}
@@ -125,7 +125,7 @@ function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId:
             />
           ) : (
             <span
-              className="text-sm font-medium text-white cursor-pointer hover:text-indigo-300"
+              className="text-sm font-medium text-slate-900 cursor-pointer hover:text-indigo-600"
               onClick={() => setEditingTitle(true)}
             >
               {title}
@@ -133,58 +133,58 @@ function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId:
           )}
         </div>
 
-        <span className="text-xs text-gray-500">Auto-saved</span>
+        <span className="text-xs text-slate-400">Auto-saved</span>
       </header>
 
       {/* Toolbar */}
       {editor && (
-        <div className="flex items-center gap-1 px-4 py-2 bg-gray-900/50 border-b border-gray-800">
+        <div className="flex items-center gap-1 px-4 py-2 bg-surface-raised/50 border-b border-surface-border">
           <button
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className={`px-2 py-1 text-xs rounded ${editor.isActive('heading', { level: 1 }) ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+            className={`px-2 py-1 text-xs rounded ${editor.isActive('heading', { level: 1 }) ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-surface-overlay'}`}
           >
             H1
           </button>
           <button
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={`px-2 py-1 text-xs rounded ${editor.isActive('heading', { level: 2 }) ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+            className={`px-2 py-1 text-xs rounded ${editor.isActive('heading', { level: 2 }) ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-surface-overlay'}`}
           >
             H2
           </button>
           <button
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className={`px-2 py-1 text-xs rounded font-bold ${editor.isActive('bold') ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+            className={`px-2 py-1 text-xs rounded font-bold ${editor.isActive('bold') ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-surface-overlay'}`}
           >
             B
           </button>
           <button
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={`px-2 py-1 text-xs rounded italic ${editor.isActive('italic') ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+            className={`px-2 py-1 text-xs rounded italic ${editor.isActive('italic') ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-surface-overlay'}`}
           >
             I
           </button>
-          <div className="w-px h-5 bg-gray-700 mx-1" />
+          <div className="w-px h-5 bg-surface-border mx-1" />
           <button
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`px-2 py-1 text-xs rounded ${editor.isActive('bulletList') ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+            className={`px-2 py-1 text-xs rounded ${editor.isActive('bulletList') ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-surface-overlay'}`}
           >
             List
           </button>
           <button
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`px-2 py-1 text-xs rounded ${editor.isActive('orderedList') ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+            className={`px-2 py-1 text-xs rounded ${editor.isActive('orderedList') ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-surface-overlay'}`}
           >
             1. List
           </button>
           <button
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            className={`px-2 py-1 text-xs rounded ${editor.isActive('codeBlock') ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+            className={`px-2 py-1 text-xs rounded ${editor.isActive('codeBlock') ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-surface-overlay'}`}
           >
             Code
           </button>
           <button
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={`px-2 py-1 text-xs rounded ${editor.isActive('blockquote') ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+            className={`px-2 py-1 text-xs rounded ${editor.isActive('blockquote') ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-surface-overlay'}`}
           >
             Quote
           </button>
@@ -192,7 +192,7 @@ function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId:
       )}
 
       {/* Editor */}
-      <div className="flex-1 overflow-y-auto bg-gray-950">
+      <div className="flex-1 overflow-y-auto bg-surface">
         <div className="max-w-3xl mx-auto">
           <EditorContent editor={editor} />
         </div>

@@ -119,15 +119,15 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-surface-border flex-shrink-0">
         <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-          <span className="text-sm font-semibold text-white">Board Chat</span>
+          <span className="text-sm font-semibold text-slate-900">Board Chat</span>
         </div>
         <button
           onClick={onClose}
-          className="text-slate-500 hover:text-white transition-colors"
+          className="text-slate-400 hover:text-slate-900 transition-colors"
           aria-label="Close chat"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,7 +139,7 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
       {/* Online members */}
       {onlineUsers.length > 0 && (
         <div className="flex-shrink-0 px-4 py-2 border-b border-surface-border bg-surface-raised/60">
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1.5">Online now</p>
+          <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-1.5">Online now</p>
           <div className="flex flex-wrap gap-1.5">
             {onlineUsers.map(u => (
               <div key={u.userId} className="flex items-center gap-1 bg-surface-overlay rounded-full pl-1 pr-2 py-0.5">
@@ -149,7 +149,7 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
                 >
                   {(u.userName || '?')[0].toUpperCase()}
                 </div>
-                <span className="text-[11px] text-slate-300 max-w-[80px] truncate">
+                <span className="text-[11px] text-slate-600 max-w-[80px] truncate">
                   {u.userId === user?.userId ? 'You' : u.userName}
                 </span>
               </div>
@@ -161,9 +161,9 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
         {loading ? (
-          <p className="text-slate-500 text-xs text-center mt-4">Loading...</p>
+          <p className="text-slate-400 text-xs text-center mt-4">Loading...</p>
         ) : messages.length === 0 ? (
-          <p className="text-slate-600 text-xs text-center mt-8">
+          <p className="text-slate-400 text-xs text-center mt-8">
             No messages yet. Say hello!
           </p>
         ) : (
@@ -182,12 +182,12 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
                   className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm break-words whitespace-pre-wrap ${
                     isMe
                       ? 'bg-indigo-600 text-white rounded-br-sm'
-                      : 'bg-surface-overlay text-slate-100 rounded-bl-sm'
+                      : 'bg-surface-overlay text-slate-800 rounded-bl-sm'
                   }`}
                 >
                   {msg.content}
                 </div>
-                <span className="text-slate-600 text-[10px] mt-0.5 px-1">
+                <span className="text-slate-400 text-[10px] mt-0.5 px-1">
                   {timeLabel(msg.createdAt)}
                 </span>
               </div>
@@ -203,7 +203,7 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
           <textarea
             ref={inputRef}
             rows={1}
-            className="flex-1 bg-surface-overlay text-white text-sm px-3 py-2 rounded-xl border border-surface-border focus:border-indigo-500 outline-none resize-none leading-relaxed"
+            className="flex-1 bg-surface-overlay text-slate-900 text-sm px-3 py-2 rounded-xl border border-surface-border focus:border-indigo-500 outline-none resize-none leading-relaxed"
             placeholder="Message… (Enter to send)"
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -222,7 +222,7 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
             </svg>
           </button>
         </div>
-        <p className="text-slate-700 text-[10px] mt-1 pl-1">Shift+Enter for new line</p>
+        <p className="text-slate-300 text-[10px] mt-1 pl-1">Shift+Enter for new line</p>
       </div>
     </div>
   )

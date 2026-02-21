@@ -268,7 +268,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
         id: newId(), board_id: boardId, type: 'text',
         x: x - 60, y: y - 12, width: 200, height: 40, rotation: 0,
         z_index: objects.size, created_by: userId, updated_at: new Date().toISOString(),
-        text: '', color: '#ffffff', font_size: 16,
+        text: '', color: '#0f172a', font_size: 16,
       }
       addObject(obj); socketRef.current?.emit('object:create', { boardId, object: obj })
       setActiveTool('select'); setSelectedObjectId(obj.id)
@@ -289,10 +289,10 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
     <div
       ref={containerRef}
       className="flex-1 overflow-auto"
-      style={{ background: '#0a0a1a', overscrollBehavior: 'contain' }}
+      style={{ background: '#f9fafb', overscrollBehavior: 'contain' }}
     >
       {activeTool === 'connect' && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-surface-raised border border-indigo-500 rounded-xl px-4 py-2 text-sm text-indigo-300 shadow-lg pointer-events-none">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-surface-raised border border-indigo-500 rounded-xl px-4 py-2 text-sm text-indigo-600 shadow-lg pointer-events-none">
           {pendingConnectorSource
             ? 'Now click the second shape to connect — or press Escape to cancel'
             : 'Click a shape to start a connector'}
@@ -300,7 +300,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
       )}
 
       {selectedIds.length > 1 && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-surface-raised border border-surface-border rounded-xl px-4 py-2 text-sm text-slate-300 shadow-lg pointer-events-none">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-surface-raised border border-surface-border rounded-xl px-4 py-2 text-sm text-slate-600 shadow-lg pointer-events-none">
           {selectedIds.length} objects selected · Delete to remove · Ctrl+D to duplicate
         </div>
       )}
@@ -320,7 +320,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
           <KonvaRect
             x={-offsetX} y={-offsetY}
             width={canvasWidth} height={canvasHeight}
-            fill="#111827"
+            fill="#f9fafb"
             listening={false}
           />
 

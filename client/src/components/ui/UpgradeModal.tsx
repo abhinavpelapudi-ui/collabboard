@@ -18,14 +18,14 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
       >
         {/* Icon */}
         <div className="w-12 h-12 bg-indigo-600/20 border border-indigo-500/30 rounded-xl flex items-center justify-center mb-5">
-          <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
 
-        <h2 className="text-lg font-bold text-white mb-2">Board limit reached</h2>
-        <p className="text-slate-400 text-sm mb-6">
-          You've used all <span className="text-white font-medium">2 boards</span> included in the free plan.
+        <h2 className="text-lg font-bold text-slate-900 mb-2">Board limit reached</h2>
+        <p className="text-slate-500 text-sm mb-6">
+          You've used all <span className="text-slate-900 font-medium">2 boards</span> included in the free plan.
           Upgrade to create unlimited boards.
         </p>
 
@@ -38,13 +38,13 @@ export default function UpgradeModal({ onClose }: UpgradeModalProps) {
           </button>
           <button
             onClick={() => { onClose(); navigate('/activate') }}
-            className="w-full bg-surface-overlay hover:bg-surface-hover text-white py-2.5 rounded-xl font-medium text-sm transition-colors"
+            className="w-full bg-surface-overlay hover:bg-surface-hover text-slate-900 py-2.5 rounded-xl font-medium text-sm transition-colors"
           >
             Activate license key
           </button>
           <button
             onClick={onClose}
-            className="w-full text-slate-500 hover:text-slate-300 text-sm py-1.5 transition-colors"
+            className="w-full text-slate-400 hover:text-slate-600 text-sm py-1.5 transition-colors"
           >
             Not now
           </button>

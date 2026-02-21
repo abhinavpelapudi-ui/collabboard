@@ -69,21 +69,21 @@ export default function SignIn() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">CollabBoard</h1>
-          <p className="text-sm text-slate-400 mt-1">Collaborate visually, powered by AI</p>
+          <h1 className="text-2xl font-bold text-slate-900">CollabBoard</h1>
+          <p className="text-sm text-slate-500 mt-1">Collaborate visually, powered by AI</p>
         </div>
 
         <div className="bg-surface-raised border border-surface-border rounded-2xl p-8 shadow-card backdrop-blur-sm">
           {/* Sign in / Sign up toggle */}
           <div className="flex bg-surface rounded-xl p-1 mb-6">
             <button
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'signin' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-300'}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'signin' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
               onClick={() => switchMode('signin')}
             >
               Sign in
             </button>
             <button
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'signup' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-300'}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'signup' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
               onClick={() => switchMode('signup')}
             >
               Sign up
@@ -106,7 +106,7 @@ export default function SignIn() {
             </a>
             <a
               href={`${SERVER_URL}/api/auth/github`}
-              className="flex items-center justify-center gap-3 w-full bg-surface-overlay hover:bg-surface-hover text-slate-200 py-2.5 rounded-xl font-medium text-sm border border-surface-border transition-all hover:border-slate-600"
+              className="flex items-center justify-center gap-3 w-full bg-surface-overlay hover:bg-surface-hover text-slate-700 py-2.5 rounded-xl font-medium text-sm border border-surface-border transition-all hover:border-slate-400"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
@@ -126,7 +126,7 @@ export default function SignIn() {
             {mode === 'signup' && otpStep === 'form' && (
               <input
                 autoFocus
-                className="w-full bg-surface text-slate-200 px-4 py-3 rounded-xl border border-surface-border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 outline-none transition-all placeholder:text-slate-600"
+                className="w-full bg-surface text-slate-700 px-4 py-3 rounded-xl border border-surface-border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 outline-none transition-all placeholder:text-slate-400"
                 placeholder="Your name"
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -138,7 +138,7 @@ export default function SignIn() {
             <input
               autoFocus={mode === 'signin' && otpStep === 'form'}
               type="email"
-              className="w-full bg-surface text-slate-200 px-4 py-3 rounded-xl border border-surface-border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 outline-none transition-all placeholder:text-slate-600"
+              className="w-full bg-surface text-slate-700 px-4 py-3 rounded-xl border border-surface-border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 outline-none transition-all placeholder:text-slate-400"
               placeholder="Email address"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -152,7 +152,7 @@ export default function SignIn() {
                 type="text"
                 inputMode="numeric"
                 maxLength={6}
-                className="w-full bg-surface text-white px-4 py-3 rounded-xl border border-indigo-500 ring-1 ring-indigo-500/30 outline-none text-center tracking-widest text-xl font-mono transition-all"
+                className="w-full bg-surface text-slate-900 px-4 py-3 rounded-xl border border-indigo-500 ring-1 ring-indigo-500/30 outline-none text-center tracking-widest text-xl font-mono transition-all"
                 placeholder="000000"
                 value={otpCode}
                 onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
@@ -161,8 +161,8 @@ export default function SignIn() {
               />
             )}
 
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            {info && <p className="text-emerald-400 text-sm">{info}</p>}
+            {error && <p className="text-red-600 text-sm">{error}</p>}
+            {info && <p className="text-emerald-600 text-sm">{info}</p>}
 
             <button
               type="submit"
@@ -177,7 +177,7 @@ export default function SignIn() {
             {otpStep === 'code' && (
               <button
                 type="button"
-                className="w-full text-slate-500 text-sm hover:text-slate-300 transition-colors"
+                className="w-full text-slate-500 text-sm hover:text-slate-700 transition-colors"
                 onClick={() => { setOtpStep('form'); setOtpCode(''); setInfo(''); setError('') }}
               >
                 Use a different email
@@ -185,8 +185,8 @@ export default function SignIn() {
             )}
           </form>
 
-          <p className="text-center text-xs text-slate-600 mt-5">
-            <button onClick={() => navigate('/pricing')} className="hover:text-slate-400 transition-colors">
+          <p className="text-center text-xs text-slate-400 mt-5">
+            <button onClick={() => navigate('/pricing')} className="hover:text-slate-600 transition-colors">
               View plans & pricing
             </button>
           </p>

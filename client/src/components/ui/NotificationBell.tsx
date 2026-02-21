@@ -94,7 +94,7 @@ export default function NotificationBell({ socket }: Props) {
       {/* Bell button */}
       <button
         onClick={handleOpen}
-        className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-surface-overlay transition-colors"
+        className="relative p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-surface-overlay transition-colors"
         aria-label="Notifications"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -112,9 +112,9 @@ export default function NotificationBell({ socket }: Props) {
       {open && (
         <div className="absolute right-0 mt-2 w-80 bg-surface-raised border border-surface-border rounded-xl shadow-xl z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-surface-border">
-            <span className="text-sm font-semibold text-white">Notifications</span>
+            <span className="text-sm font-semibold text-slate-900">Notifications</span>
             {notifications.length > 0 && (
-              <button onClick={markAllRead} className="text-xs text-indigo-400 hover:text-indigo-300">
+              <button onClick={markAllRead} className="text-xs text-indigo-600 hover:text-indigo-600">
                 Mark all read
               </button>
             )}
@@ -122,7 +122,7 @@ export default function NotificationBell({ socket }: Props) {
 
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
-              <p className="text-slate-500 text-sm text-center py-8">No notifications yet</p>
+              <p className="text-slate-400 text-sm text-center py-8">No notifications yet</p>
             ) : (
               notifications.map(n => (
                 <button
@@ -133,12 +133,12 @@ export default function NotificationBell({ socket }: Props) {
                   <div className="flex items-start gap-3">
                     <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!n.read_at ? 'bg-indigo-400' : 'bg-transparent'}`} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white leading-snug">
+                      <p className="text-sm text-slate-900 leading-snug">
                         <span className="font-medium">{n.data.sharedBy}</span> shared{' '}
                         <span className="font-medium">"{n.data.boardTitle}"</span> with you
-                        <span className="text-slate-400"> as {n.data.role}</span>
+                        <span className="text-slate-500"> as {n.data.role}</span>
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">{timeAgo(n.created_at)}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{timeAgo(n.created_at)}</p>
                     </div>
                   </div>
                 </button>

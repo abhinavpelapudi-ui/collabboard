@@ -98,28 +98,28 @@ export default function ObjectDetailPanel({ boardId, objectId, socketRef, onClos
   }
 
   const priorityColors: Record<string, string> = {
-    low: 'text-slate-400', medium: 'text-yellow-400', high: 'text-red-400',
+    low: 'text-slate-500', medium: 'text-yellow-600', high: 'text-red-600',
   }
   const statusColors: Record<string, string> = {
-    todo: 'text-slate-400', in_progress: 'text-blue-400', review: 'text-purple-400', done: 'text-green-400',
+    todo: 'text-slate-500', in_progress: 'text-blue-600', review: 'text-purple-600', done: 'text-green-600',
   }
 
   return (
     <div className="absolute right-0 top-12 bottom-0 w-80 bg-surface-raised border-l border-surface-border z-20 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
-        <span className="text-sm font-semibold text-white">{typeIcons[obj.type] || obj.type}</span>
-        <button onClick={onClose} className="text-slate-400 hover:text-white text-sm">✕</button>
+        <span className="text-sm font-semibold text-slate-900">{typeIcons[obj.type] || obj.type}</span>
+        <button onClick={onClose} className="text-slate-500 hover:text-slate-900 text-sm">✕</button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Assignment */}
         <div>
-          <label className="text-xs text-slate-400 block mb-1">Assigned to</label>
+          <label className="text-xs text-slate-500 block mb-1">Assigned to</label>
           <select
             value={props.assigned_to || ''}
             onChange={e => updateProp('assigned_to', e.target.value || undefined)}
-            className="w-full bg-surface-overlay text-slate-200 text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none"
+            className="w-full bg-surface-overlay text-slate-700 text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none"
           >
             <option value="">Unassigned</option>
             {members.map(m => (
@@ -130,18 +130,18 @@ export default function ObjectDetailPanel({ boardId, objectId, socketRef, onClos
 
         {/* Tags */}
         <div>
-          <label className="text-xs text-slate-400 block mb-1">Tags</label>
+          <label className="text-xs text-slate-500 block mb-1">Tags</label>
           <div className="flex flex-wrap gap-1 mb-1">
             {(props.tags || []).map((tag: string) => (
-              <span key={tag} className="inline-flex items-center gap-1 bg-indigo-600/30 text-indigo-300 text-xs px-2 py-0.5 rounded-full">
+              <span key={tag} className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full">
                 {tag}
-                <button onClick={() => removeTag(tag)} className="hover:text-white">×</button>
+                <button onClick={() => removeTag(tag)} className="hover:text-slate-900">×</button>
               </span>
             ))}
           </div>
           <div className="flex gap-1">
             <input
-              className="flex-1 bg-surface-overlay text-white text-xs rounded-md px-2 py-1 border border-surface-border outline-none"
+              className="flex-1 bg-surface-overlay text-slate-900 text-xs rounded-md px-2 py-1 border border-surface-border outline-none"
               placeholder="Add tag..."
               value={tagInput}
               onChange={e => setTagInput(e.target.value)}
@@ -153,28 +153,28 @@ export default function ObjectDetailPanel({ boardId, objectId, socketRef, onClos
                 <option key={t} value={t} />
               ))}
             </datalist>
-            <button onClick={addTag} className="text-xs bg-surface-overlay text-slate-300 px-2 rounded-md hover:bg-surface-hover">+</button>
+            <button onClick={addTag} className="text-xs bg-surface-overlay text-slate-600 px-2 rounded-md hover:bg-surface-hover">+</button>
           </div>
         </div>
 
         {/* Due Date */}
         <div>
-          <label className="text-xs text-slate-400 block mb-1">Due date</label>
+          <label className="text-xs text-slate-500 block mb-1">Due date</label>
           <input
             type="date"
             value={props.due_date || ''}
             onChange={e => updateProp('due_date', e.target.value || undefined)}
-            className="w-full bg-surface-overlay text-slate-200 text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none"
+            className="w-full bg-surface-overlay text-slate-700 text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none"
           />
         </div>
 
         {/* Priority */}
         <div>
-          <label className="text-xs text-slate-400 block mb-1">Priority</label>
+          <label className="text-xs text-slate-500 block mb-1">Priority</label>
           <select
             value={props.priority || ''}
             onChange={e => updateProp('priority', e.target.value || undefined)}
-            className={`w-full bg-surface-overlay text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none ${priorityColors[props.priority] || 'text-slate-200'}`}
+            className={`w-full bg-surface-overlay text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none ${priorityColors[props.priority] || 'text-slate-700'}`}
           >
             <option value="">None</option>
             <option value="low">Low</option>
@@ -185,11 +185,11 @@ export default function ObjectDetailPanel({ boardId, objectId, socketRef, onClos
 
         {/* Status */}
         <div>
-          <label className="text-xs text-slate-400 block mb-1">Status</label>
+          <label className="text-xs text-slate-500 block mb-1">Status</label>
           <select
             value={props.status || ''}
             onChange={e => updateProp('status', e.target.value || undefined)}
-            className={`w-full bg-surface-overlay text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none ${statusColors[props.status] || 'text-slate-200'}`}
+            className={`w-full bg-surface-overlay text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none ${statusColors[props.status] || 'text-slate-700'}`}
           >
             <option value="">None</option>
             <option value="todo">To Do</option>
@@ -201,18 +201,18 @@ export default function ObjectDetailPanel({ boardId, objectId, socketRef, onClos
 
         {/* Comments */}
         <div>
-          <label className="text-xs text-slate-400 block mb-2">Comments</label>
+          <label className="text-xs text-slate-500 block mb-2">Comments</label>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {comments.length === 0 && (
-              <p className="text-xs text-slate-500">No comments yet</p>
+              <p className="text-xs text-slate-400">No comments yet</p>
             )}
             {comments.map(c => (
               <div key={c.id} className="bg-surface-overlay rounded-lg px-3 py-2">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-medium text-indigo-300">{c.user_name}</span>
-                  <span className="text-[10px] text-slate-500">{new Date(c.created_at).toLocaleDateString()}</span>
+                  <span className="text-xs font-medium text-indigo-600">{c.user_name}</span>
+                  <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
                 </div>
-                <p className="text-xs text-slate-300">{c.content}</p>
+                <p className="text-xs text-slate-600">{c.content}</p>
               </div>
             ))}
             <div ref={commentsEndRef} />
@@ -223,7 +223,7 @@ export default function ObjectDetailPanel({ boardId, objectId, socketRef, onClos
       {/* Comment input */}
       <div className="p-3 border-t border-surface-border flex gap-2">
         <input
-          className="flex-1 bg-surface-overlay text-white text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none"
+          className="flex-1 bg-surface-overlay text-slate-900 text-xs rounded-md px-2 py-1.5 border border-surface-border outline-none"
           placeholder="Add a comment..."
           value={newComment}
           onChange={e => setNewComment(e.target.value)}

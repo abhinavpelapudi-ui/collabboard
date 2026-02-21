@@ -34,7 +34,7 @@ function FrameShape({ object, boardId, socketRef, isSelected }: Props) {
       width: object.width,
       height: LABEL_HEIGHT,
       fontSize: 12,
-      fill: '#374151',
+      fill: '#64748b',
       currentText: object.title,
       onInput: (title) => {
         updateObject(object.id, { title } as any)
@@ -68,7 +68,7 @@ function FrameShape({ object, boardId, socketRef, isSelected }: Props) {
         y={-LABEL_HEIGHT}
         width={object.width}
         height={LABEL_HEIGHT}
-        fill={isSelected ? '#6366f1' : '#374151'}
+        fill={isSelected ? '#6366f1' : '#64748b'}
         cornerRadius={[4, 4, 0, 0]}
       />
       {/* Title text */}
@@ -87,8 +87,8 @@ function FrameShape({ object, boardId, socketRef, isSelected }: Props) {
       <Rect
         width={object.width}
         height={object.height}
-        fill="rgba(255,255,255,0.03)"
-        stroke={isSelected ? '#6366f1' : '#4B5563'}
+        fill="rgba(0,0,0,0.02)"
+        stroke={isSelected ? '#6366f1' : '#cbd5e1'}
         strokeWidth={isSelected ? 2 : 1}
         dash={[8, 4]}
       />

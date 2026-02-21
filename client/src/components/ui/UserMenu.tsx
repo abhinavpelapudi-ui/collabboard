@@ -16,10 +16,10 @@ function initials(name: string) {
 }
 
 const planColors: Record<string, string> = {
-  free: 'text-slate-400 bg-surface-overlay',
-  pro: 'text-indigo-300 bg-indigo-500/20',
-  business: 'text-amber-300 bg-amber-500/20',
-  enterprise: 'text-purple-300 bg-purple-500/20',
+  free: 'text-slate-600 bg-slate-100',
+  pro: 'text-indigo-700 bg-indigo-100',
+  business: 'text-amber-700 bg-amber-100',
+  enterprise: 'text-purple-700 bg-purple-100',
 }
 
 export default function UserMenu({ user }: Props) {
@@ -80,8 +80,8 @@ export default function UserMenu({ user }: Props) {
                 </div>
               )}
               <div className="overflow-hidden">
-                <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                <p className="text-sm font-medium text-slate-900 truncate">{user.name}</p>
+                <p className="text-xs text-slate-500 truncate">{user.email}</p>
               </div>
             </div>
             <span className={`mt-2 inline-block text-xs px-2 py-0.5 rounded-full font-medium ${planColors[plan]}`}>
@@ -93,13 +93,13 @@ export default function UserMenu({ user }: Props) {
           <div className="py-1">
             <button
               onClick={() => { setOpen(false); navigate('/pricing') }}
-              className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-surface-overlay hover:text-white transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-surface-overlay hover:text-slate-900 transition-colors"
             >
               Pricing & plans
             </button>
             <button
               onClick={() => { setOpen(false); navigate('/activate') }}
-              className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-surface-overlay hover:text-white transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-surface-overlay hover:text-slate-900 transition-colors"
             >
               Activate license key
             </button>
@@ -108,7 +108,7 @@ export default function UserMenu({ user }: Props) {
           <div className="border-t border-surface-border py-1">
             <button
               onClick={signOut}
-              className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-surface-overlay hover:text-red-300 transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-surface-overlay hover:text-red-600 transition-colors"
             >
               Sign out
             </button>

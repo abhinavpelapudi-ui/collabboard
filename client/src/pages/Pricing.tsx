@@ -78,24 +78,24 @@ export default function Pricing() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-surface text-slate-900">
       {/* Nav */}
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <button onClick={() => navigate(loggedIn ? '/dashboard' : '/sign-in')} className="text-xl font-bold text-white hover:text-indigo-300 transition-colors">
+      <header className="border-b border-surface-border px-6 py-4 flex items-center justify-between">
+        <button onClick={() => navigate(loggedIn ? '/dashboard' : '/sign-in')} className="text-xl font-bold text-slate-900 hover:text-indigo-600 transition-colors">
           CollabBoard
         </button>
         <div className="flex items-center gap-3">
           {loggedIn ? (
             <>
-              <button onClick={() => navigate('/activate')} className="text-sm text-gray-400 hover:text-white">
+              <button onClick={() => navigate('/activate')} className="text-sm text-slate-500 hover:text-slate-900">
                 Activate license
               </button>
-              <button onClick={() => navigate('/dashboard')} className="text-sm bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 rounded-lg transition-colors">
+              <button onClick={() => navigate('/dashboard')} className="text-sm bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-lg transition-colors">
                 Dashboard
               </button>
             </>
           ) : (
-            <button onClick={() => navigate('/sign-in')} className="text-sm bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 rounded-lg transition-colors">
+            <button onClick={() => navigate('/sign-in')} className="text-sm bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-lg transition-colors">
               Sign in
             </button>
           )}
@@ -105,7 +105,7 @@ export default function Pricing() {
       {/* Hero */}
       <div className="text-center pt-16 pb-12 px-6">
         <h1 className="text-4xl font-bold mb-4">Simple, transparent pricing</h1>
-        <p className="text-gray-400 text-lg max-w-xl mx-auto">
+        <p className="text-slate-500 text-lg max-w-xl mx-auto">
           Start for free. Upgrade when your team needs more.
         </p>
       </div>
@@ -117,8 +117,8 @@ export default function Pricing() {
             key={plan.name}
             className={`relative rounded-2xl border p-8 flex flex-col ${
               plan.highlight
-                ? 'border-indigo-500 bg-indigo-950/40'
-                : 'border-gray-800 bg-gray-900'
+                ? 'border-indigo-500 bg-indigo-50'
+                : 'border-surface-border bg-surface-raised'
             }`}
           >
             {plan.badge && (
@@ -128,21 +128,21 @@ export default function Pricing() {
             )}
 
             <h2 className="text-xl font-bold mb-1">{plan.name}</h2>
-            <p className="text-indigo-400 text-sm font-medium mb-6">{plan.boardLimit}</p>
+            <p className="text-indigo-600 text-sm font-medium mb-6">{plan.boardLimit}</p>
 
             <ul className="space-y-3 mb-8 flex-1">
               {plan.features.map(f => (
                 <li key={f.text} className="flex items-center gap-2 text-sm">
                   {f.included ? (
-                    <svg className="w-4 h-4 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    <svg className="w-4 h-4 text-gray-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   )}
-                  <span className={f.included ? 'text-gray-200' : 'text-gray-500'}>{f.text}</span>
+                  <span className={f.included ? 'text-slate-700' : 'text-slate-400'}>{f.text}</span>
                 </li>
               ))}
             </ul>
@@ -152,7 +152,7 @@ export default function Pricing() {
               className={`w-full py-2.5 rounded-xl font-medium transition-colors text-sm ${
                 plan.highlight
                   ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                  : 'bg-gray-800 hover:bg-gray-700 text-white'
+                  : 'bg-surface-overlay hover:bg-surface-hover text-slate-700'
               }`}
             >
               {plan.cta}
@@ -162,9 +162,9 @@ export default function Pricing() {
       </div>
 
       {/* License key link */}
-      <div className="text-center pb-16 text-sm text-gray-500">
+      <div className="text-center pb-16 text-sm text-slate-400">
         Already have a license key?{' '}
-        <button onClick={() => navigate('/activate')} className="text-indigo-400 hover:text-indigo-300">
+        <button onClick={() => navigate('/activate')} className="text-indigo-600 hover:text-indigo-500">
           Activate it →
         </button>
       </div>

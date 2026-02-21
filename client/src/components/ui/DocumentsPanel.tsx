@@ -49,8 +49,8 @@ export default function DocumentsPanel({ boardId, onClose, onOpenDoc }: Props) {
     <div className="absolute right-4 bottom-20 z-30 w-80 bg-surface-raised border border-surface-border rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-96">
       {/* Header */}
       <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between">
-        <span className="text-sm font-semibold text-white">Documents</span>
-        <button onClick={onClose} className="text-slate-400 hover:text-white text-sm">✕</button>
+        <span className="text-sm font-semibold text-slate-900">Documents</span>
+        <button onClick={onClose} className="text-slate-500 hover:text-slate-900 text-sm">✕</button>
       </div>
 
       {/* Create */}
@@ -65,9 +65,9 @@ export default function DocumentsPanel({ boardId, onClose, onOpenDoc }: Props) {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {loading && <p className="text-xs text-slate-500 px-2 py-1">Loading...</p>}
+        {loading && <p className="text-xs text-slate-400 px-2 py-1">Loading...</p>}
         {!loading && docs.length === 0 && (
-          <p className="text-xs text-slate-500 px-2 py-1">No documents yet</p>
+          <p className="text-xs text-slate-400 px-2 py-1">No documents yet</p>
         )}
         {docs.map(doc => (
           <div
@@ -76,14 +76,14 @@ export default function DocumentsPanel({ boardId, onClose, onOpenDoc }: Props) {
             onClick={() => onOpenDoc(doc.id)}
           >
             <div className="min-w-0">
-              <p className="text-sm text-slate-200 truncate">{doc.title}</p>
-              <p className="text-[10px] text-slate-500">
+              <p className="text-sm text-slate-700 truncate">{doc.title}</p>
+              <p className="text-[10px] text-slate-400">
                 {new Date(doc.updated_at).toLocaleDateString()}
               </p>
             </div>
             <button
               onClick={e => { e.stopPropagation(); deleteDoc(doc.id) }}
-              className="text-slate-600 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 ml-2"
+              className="text-slate-400 hover:text-red-600 text-xs opacity-0 group-hover:opacity-100 ml-2"
               title="Delete"
             >
               ✕

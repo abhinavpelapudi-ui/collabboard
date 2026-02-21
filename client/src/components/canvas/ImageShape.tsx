@@ -59,9 +59,9 @@ function ImageShape({ object, boardId, socketRef, isSelected }: Props) {
       <Rect
         width={object.width}
         height={object.height}
-        fill="#1e293b"
+        fill="#e2e8f0"
         cornerRadius={4}
-        stroke={isSelected ? '#6366f1' : '#334155'}
+        stroke={isSelected ? '#6366f1' : '#e2e8f0'}
         strokeWidth={isSelected ? 2 : 1}
       />
       {image && (

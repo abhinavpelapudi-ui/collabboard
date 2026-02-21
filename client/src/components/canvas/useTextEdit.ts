@@ -46,7 +46,7 @@ export function openTextEditor(opts: Options) {
     fontFamily: 'inherit',
     zIndex: '1000',
     borderRadius: '4px',
-    color: opts.fill === 'transparent' || opts.fill.startsWith('rgba') ? '#ffffff' : '#1a1a1a',
+    color: opts.fill === 'transparent' || opts.fill.startsWith('rgba') ? '#1e293b' : '#1e293b',
     textAlign: 'center',
   })
   textarea.value = opts.currentText

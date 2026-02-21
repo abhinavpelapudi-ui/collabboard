@@ -41,20 +41,20 @@ export default function ActivateLicense() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-8">
-        <button onClick={() => navigate('/dashboard')} className="text-gray-500 hover:text-white text-sm mb-6 block">
+    <div className="min-h-screen bg-surface flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-surface-raised border border-surface-border rounded-2xl p-8">
+        <button onClick={() => navigate('/dashboard')} className="text-slate-400 hover:text-slate-900 text-sm mb-6 block">
           ← Back to dashboard
         </button>
 
-        <h1 className="text-2xl font-bold text-white mb-1">Activate License</h1>
-        <p className="text-gray-400 text-sm mb-8">
+        <h1 className="text-2xl font-bold text-slate-900 mb-1">Activate License</h1>
+        <p className="text-slate-500 text-sm mb-8">
           Enter your license key to unlock unlimited boards and premium features.
         </p>
 
         {success ? (
           <div className="space-y-4">
-            <div className="bg-green-900/30 border border-green-700 text-green-300 rounded-xl px-4 py-3 text-sm">
+            <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
               {success}
             </div>
             <button
@@ -68,7 +68,7 @@ export default function ActivateLicense() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
               autoFocus
-              className="w-full bg-gray-800 text-white px-4 py-3 rounded-xl border border-gray-700 focus:border-indigo-500 outline-none font-mono text-sm"
+              className="w-full bg-surface-overlay text-slate-900 px-4 py-3 rounded-xl border border-surface-border focus:border-indigo-500 outline-none font-mono text-sm"
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
               value={key}
               onChange={e => setKey(e.target.value)}
@@ -77,7 +77,7 @@ export default function ActivateLicense() {
             />
 
             {error && (
-              <p className="text-red-400 text-sm">{error}</p>
+              <p className="text-red-600 text-sm">{error}</p>
             )}
 
             <button
@@ -90,9 +90,9 @@ export default function ActivateLicense() {
           </form>
         )}
 
-        <p className="text-center text-xs text-gray-600 mt-6">
+        <p className="text-center text-xs text-slate-400 mt-6">
           Need a license?{' '}
-          <button onClick={() => navigate('/pricing')} className="text-indigo-400 hover:text-indigo-300">
+          <button onClick={() => navigate('/pricing')} className="text-indigo-600 hover:text-indigo-500">
             See pricing
           </button>
         </p>
