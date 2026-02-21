@@ -8,8 +8,6 @@ import { BoardObject } from '@collabboard/shared'
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
 
-type AgentMode = 'quick' | 'agent'
-
 interface Props {
   boardId: string
   socketRef: React.MutableRefObject<Socket | null>
@@ -51,7 +49,6 @@ export default function AIChat({ boardId, socketRef }: Props) {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [mode, setMode] = useState<AgentMode>('quick')
   const [isRecording, setIsRecording] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState('llama-3.3-70b-versatile')
@@ -67,9 +64,8 @@ export default function AIChat({ boardId, socketRef }: Props) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  // Fetch available models when Agent mode is selected
+  // Fetch available models on mount
   useEffect(() => {
-    if (mode !== 'agent') return
     axios.get(`${SERVER_URL}/api/agent/models`)
       .then(({ data }) => {
         setAvailableModels(data.models || [])
@@ -80,7 +76,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
           { model_id: 'llama-3.3-70b-versatile', display_name: 'Llama 3.3 70B (Groq, free)', provider: 'groq', is_free: true, available: true }
         ])
       })
-  }, [mode])
+  }, [])
 
   function applyActions(data: any) {
     if (data.createdObjects?.length) {
@@ -113,12 +109,9 @@ export default function AIChat({ boardId, socketRef }: Props) {
 
     try {
       const token = getToken()
-      const endpoint = mode === 'agent'
-        ? `${SERVER_URL}/api/agent/command`
-        : `${SERVER_URL}/api/ai/command`
+      const endpoint = `${SERVER_URL}/api/agent/command`
 
-      const body: any = { boardId, command }
-      if (mode === 'agent') body.model = selectedModel
+      const body: any = { boardId, command, model: selectedModel }
 
       const { data } = await axios.post(
         endpoint,
@@ -225,40 +218,14 @@ export default function AIChat({ boardId, socketRef }: Props) {
 
   return (
     <div className="absolute right-4 bottom-20 z-30 w-80 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-      {/* Header with mode toggle */}
-      <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-indigo-400">✦</span>
-          <span className="text-sm font-semibold text-white">AI Board Agent</span>
-        </div>
-        <div className="flex items-center bg-gray-800 rounded-lg p-0.5">
-          <button
-            onClick={() => setMode('quick')}
-            className={`text-xs px-2 py-1 rounded-md transition-colors ${
-              mode === 'quick'
-                ? 'bg-indigo-600 text-white'
-                : 'text-gray-400 hover:text-gray-200'
-            }`}
-            title="Quick mode: Uses Claude API (faster)"
-          >
-            Quick
-          </button>
-          <button
-            onClick={() => setMode('agent')}
-            className={`text-xs px-2 py-1 rounded-md transition-colors ${
-              mode === 'agent'
-                ? 'bg-emerald-600 text-white'
-                : 'text-gray-400 hover:text-gray-200'
-            }`}
-            title="Agent mode: Uses Python agent with Groq (free, traced)"
-          >
-            Agent
-          </button>
-        </div>
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-gray-700 flex items-center gap-2">
+        <span className="text-indigo-400">✦</span>
+        <span className="text-sm font-semibold text-white">AI Board Agent</span>
       </div>
 
-      {/* Model selector (Agent mode only) */}
-      {mode === 'agent' && availableModels.length > 0 && (
+      {/* Model selector */}
+      {availableModels.length > 0 && (
         <div className="px-3 py-1.5 bg-gray-800/50 border-b border-gray-700">
           <select
             value={selectedModel}
