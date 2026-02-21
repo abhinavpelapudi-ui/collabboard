@@ -218,6 +218,74 @@ agent.post('/upload', requireAuth, async (c) => {
   return c.json(result)
 })
 
+// ─── POST /dashboard — Dashboard AI navigator: find & navigate to boards ────
+agent.post('/dashboard', requireAuth, async (c) => {
+  const body = await c.req.json()
+  const schema = z.object({
+    command: z.string().min(1).max(2000),
+    model: z.string().max(50).optional(),
+  })
+  const { command, model } = schema.parse(body)
+  const userId = c.get('userId')
+
+  // Rate limit
+  const lastReq = lastRequestTime.get(userId) || 0
+  if (Date.now() - lastReq < 3000) {
+    return c.json({ error: 'Too many requests. Wait a moment.' }, 429)
+  }
+  lastRequestTime.set(userId, Date.now())
+
+  // Fetch all boards accessible to this user with object summaries
+  const { rows: boardSummaries } = await pool.query(
+    `SELECT DISTINCT b.id, b.title,
+       (SELECT COUNT(*)::int FROM objects o WHERE o.board_id = b.id) AS object_count,
+       (SELECT string_agg(DISTINCT o.type, ', ') FROM objects o WHERE o.board_id = b.id) AS object_types,
+       (SELECT string_agg(sub.txt, ' | ')
+        FROM (
+          SELECT COALESCE(o.props->>'text', o.props->>'title', '') AS txt
+          FROM objects o
+          WHERE o.board_id = b.id
+            AND (o.props->>'text' IS NOT NULL OR o.props->>'title' IS NOT NULL)
+          LIMIT 10
+        ) sub
+       ) AS content_preview
+     FROM boards b
+     LEFT JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = $1
+     WHERE b.owner_id = $1 OR bm.user_id = $1
+     ORDER BY b.created_at DESC`,
+    [userId]
+  )
+
+  // Forward to Python agent
+  let agentResult: any
+  try {
+    const resp = await fetch(`${PYTHON_AGENT_URL}/agent/dashboard`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        command,
+        boards: boardSummaries,
+        user_id: userId,
+        model: model || '',
+      }),
+    })
+    if (!resp.ok) {
+      const errText = await resp.text()
+      return c.json({ error: `Agent error: ${errText}` }, 502)
+    }
+    agentResult = await resp.json()
+  } catch (err) {
+    console.error('Python agent unreachable for dashboard:', err)
+    return c.json({ error: 'AI agent is unavailable. Try again later.' }, 503)
+  }
+
+  return c.json({
+    message: agentResult.message || 'I could not find a matching board.',
+    boardId: agentResult.board_id || null,
+    boardTitle: agentResult.board_title || null,
+  })
+})
+
 // ─── GET /costs — Proxy cost data from Python agent (admin only) ─────────────
 agent.get('/costs', requireAuth, async (c) => {
   try {

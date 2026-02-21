@@ -9,6 +9,7 @@ import UserMenu from '../components/ui/UserMenu'
 import NotificationBell from '../components/ui/NotificationBell'
 import WorkspaceModal from '../components/ui/WorkspaceModal'
 import MoveToWorkspaceModal from '../components/ui/MoveToWorkspaceModal'
+import DashboardAIChat from '../components/ui/DashboardAIChat'
 
 const FREE_BOARD_LIMIT = 2
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
@@ -396,6 +397,8 @@ export default function Dashboard() {
           }}
         />
       )}
+
+      <DashboardAIChat onNavigate={(boardId) => navigate(`/board/${boardId}`)} />
     </div>
   )
 }

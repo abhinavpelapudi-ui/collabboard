@@ -5,9 +5,13 @@ import logging
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 
-from app.models.schemas import AgentCommandRequest, AgentCommandResponse, DocumentUploadResponse
-from app.agent.agent import run_agent
-from app.agent.models import SUPPORTED_MODELS, DEFAULT_MODEL_ID
+from app.models.schemas import (
+    AgentCommandRequest, AgentCommandResponse,
+    DocumentUploadResponse,
+    DashboardQueryRequest, DashboardQueryResponse,
+)
+from app.agent.agent import run_agent, _create_llm
+from app.agent.models import SUPPORTED_MODELS, DEFAULT_MODEL_ID, get_model_spec
 from app.config import settings
 from app.services.document_service import parse_document
 from app.services.vector_store import store_document_chunks
@@ -113,6 +117,75 @@ async def upload_document(
         file_type=extension,
         preview=preview,
         metadata=metadata,
+    )
+
+
+DASHBOARD_SYSTEM_PROMPT = """You are a navigation assistant for CollabBoard. The user has multiple boards.
+Given their query, help them find the right board to navigate to.
+
+AVAILABLE BOARDS:
+{boards_context}
+
+RULES:
+- If the user's query clearly matches a specific board, respond with a short friendly message and include the board_id and board_title.
+- If multiple boards could match, briefly list the options and ask which one they mean.
+- If no board matches, say you couldn't find a matching board and suggest they create a new one.
+- Keep responses SHORT (1-2 sentences).
+- ALWAYS respond in valid JSON: {{"message": "your response", "board_id": "uuid-or-null", "board_title": "title-or-null"}}
+- Use null (not "null") for board_id and board_title when no single board is identified."""
+
+
+@router.post("/dashboard", response_model=DashboardQueryResponse)
+async def handle_dashboard_query(request: DashboardQueryRequest):
+    """Match a user query against their boards and return navigation target."""
+    if not request.command.strip():
+        raise HTTPException(status_code=400, detail="Command cannot be empty")
+
+    # Build boards context
+    board_lines = []
+    for b in request.boards:
+        parts = [f'"{b.get("title", "Untitled")}" (id={b["id"]})']
+        obj_count = b.get("object_count", 0)
+        obj_types = b.get("object_types", "")
+        if obj_count:
+            parts.append(f"{obj_count} objects")
+        if obj_types:
+            parts.append(f"types: {obj_types}")
+        preview = (b.get("content_preview") or "")[:200]
+        if preview:
+            parts.append(f"content: {preview}")
+        board_lines.append("- " + ", ".join(parts))
+
+    boards_context = "\n".join(board_lines) if board_lines else "(No boards yet)"
+    prompt = DASHBOARD_SYSTEM_PROMPT.format(boards_context=boards_context)
+
+    spec = get_model_spec(request.model or DEFAULT_MODEL_ID)
+    llm = _create_llm(spec)
+
+    from langchain_core.messages import SystemMessage, HumanMessage
+    result = llm.invoke([
+        SystemMessage(content=prompt),
+        HumanMessage(content=request.command),
+    ])
+
+    # Parse JSON from LLM response
+    import json
+    response_text = result.content if isinstance(result.content, str) else str(result.content)
+    try:
+        # Try to extract JSON from the response (may have markdown wrapping)
+        json_str = response_text
+        if "```" in json_str:
+            json_str = json_str.split("```")[1]
+            if json_str.startswith("json"):
+                json_str = json_str[4:]
+        parsed = json.loads(json_str.strip())
+    except (json.JSONDecodeError, IndexError):
+        parsed = {"message": response_text, "board_id": None, "board_title": None}
+
+    return DashboardQueryResponse(
+        message=parsed.get("message", response_text),
+        board_id=parsed.get("board_id"),
+        board_title=parsed.get("board_title"),
     )
 
 

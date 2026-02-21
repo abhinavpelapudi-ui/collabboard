@@ -33,6 +33,21 @@ class DocumentUploadResponse(BaseModel):
     metadata: dict  # page_count, word_count, etc.
 
 
+# ── Dashboard Navigator ─────────────────────────────────────────────────────
+
+class DashboardQueryRequest(BaseModel):
+    command: str
+    boards: list[dict] = []  # [{id, title, object_count, object_types, content_preview}]
+    user_id: str = ""
+    model: str = ""
+
+
+class DashboardQueryResponse(BaseModel):
+    message: str
+    board_id: str | None = None
+    board_title: str | None = None
+
+
 # ── Chart Generation (used internally by agent tools) ────────────────────────
 
 class ChartRequest(BaseModel):
