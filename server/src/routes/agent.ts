@@ -133,6 +133,7 @@ agent.post('/command', requireAuth, async (c) => {
     createdObjects,
     updatedObjects,
     deletedObjectIds,
+    fitToView: agentResult.fit_to_view || false,
   })
 })
 

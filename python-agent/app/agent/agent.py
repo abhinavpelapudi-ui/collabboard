@@ -203,6 +203,7 @@ def run_agent(command: str, board_state: list[dict], board_id: str = "", model_i
     actions = []
     actions_performed = []
     final_message = "Done"
+    fit_to_view = False
 
     for msg in result.get("messages", []):
         # Tool messages contain the structured output from our tools
@@ -217,10 +218,14 @@ def run_agent(command: str, board_state: list[dict], board_id: str = "", model_i
                     continue
 
             if isinstance(content, dict) and "action" in content:
-                actions.append(content)
-                actions_performed.append(
-                    f"{msg.name}: {content.get('object_type', '')}"
-                )
+                if content["action"] == "fit_view":
+                    fit_to_view = True
+                    actions_performed.append("fit_view")
+                else:
+                    actions.append(content)
+                    actions_performed.append(
+                        f"{msg.name}: {content.get('object_type', '')}"
+                    )
             elif isinstance(content, list):
                 for item in content:
                     if isinstance(item, dict) and "action" in item:
@@ -245,6 +250,7 @@ def run_agent(command: str, board_state: list[dict], board_id: str = "", model_i
         "actions": actions,
         "actions_performed": actions_performed,
         "trace_id": trace_id,
+        "fit_to_view": fit_to_view,
     }
 
 

@@ -98,6 +98,9 @@ export default function AIChat({ boardId, socketRef }: Props) {
         socketRef.current?.emit('object:delete', { boardId, objectId })
       })
     }
+    if (data.fitToView) {
+      triggerFit()
+    }
   }
 
   async function sendCommand() {

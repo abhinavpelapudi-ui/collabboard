@@ -236,7 +236,16 @@ def find_objects_by_text(search_text: str) -> str:
     return json.dumps({"count": len(results), "objects": results})
 
 
-# All board tools exported as a list (9 tools)
+@tool
+def fit_view() -> dict:
+    """Zoom the board view to fit all objects on screen.
+
+    Call this when the user asks to see all notes, zoom to fit, or make everything visible.
+    """
+    return {"action": "fit_view"}
+
+
+# All board tools exported as a list (10 tools)
 BOARD_TOOLS = [
     get_board_layout,
     find_objects_by_text,
@@ -247,4 +256,5 @@ BOARD_TOOLS = [
     create_connector,
     update_object,
     delete_object,
+    fit_view,
 ]

@@ -20,6 +20,7 @@ class AgentCommandResponse(BaseModel):
     actions: list[BoardAction]
     actions_performed: list[str] = []
     trace_id: str = ""
+    fit_to_view: bool = False
 
 
 # ── Document Upload ──────────────────────────────────────────────────────────
