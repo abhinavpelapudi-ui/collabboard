@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { getToken } from '../../hooks/useAuth'
 import { BoardDocument } from '@collabboard/shared'
@@ -9,10 +8,10 @@ const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
 interface Props {
   boardId: string
   onClose: () => void
+  onOpenDoc: (docId: string) => void
 }
 
-export default function DocumentsPanel({ boardId, onClose }: Props) {
-  const navigate = useNavigate()
+export default function DocumentsPanel({ boardId, onClose, onOpenDoc }: Props) {
   const [docs, setDocs] = useState<BoardDocument[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -32,7 +31,8 @@ export default function DocumentsPanel({ boardId, onClose }: Props) {
         { headers: { Authorization: `Bearer ${getToken()}` } }
       )
       const doc = data.document
-      navigate(`/board/${boardId}/doc/${doc.id}`)
+      setDocs(prev => [doc, ...prev])
+      onOpenDoc(doc.id)
     } catch {}
   }
 
@@ -73,7 +73,7 @@ export default function DocumentsPanel({ boardId, onClose }: Props) {
           <div
             key={doc.id}
             className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-800 cursor-pointer group"
-            onClick={() => navigate(`/board/${boardId}/doc/${doc.id}`)}
+            onClick={() => onOpenDoc(doc.id)}
           >
             <div className="min-w-0">
               <p className="text-sm text-gray-200 truncate">{doc.title}</p>

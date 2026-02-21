@@ -14,6 +14,7 @@ import BoardChat from '../components/ui/BoardChat'
 import ActivityLog from '../components/ui/ActivityLog'
 import ObjectDetailPanel from '../components/ui/ObjectDetailPanel'
 import DocumentsPanel from '../components/ui/DocumentsPanel'
+import { EmbeddedDocEditor } from './DocumentEditor'
 import { Board as BoardType, BoardRole } from '@collabboard/shared'
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
@@ -54,6 +55,7 @@ export default function Board() {
   const [showActivity, setShowActivity] = useState(false)
   const [unreadChat, setUnreadChat] = useState(0)
   const [showDocs, setShowDocs] = useState(false)
+  const [activeDocId, setActiveDocId] = useState<string | null>(null)
   const showChatRef = useRef(showChat)
   useEffect(() => { showChatRef.current = showChat }, [showChat])
 
@@ -265,7 +267,19 @@ export default function Board() {
         <DocumentsPanel
           boardId={boardId}
           onClose={() => setShowDocs(false)}
+          onOpenDoc={(docId) => { setActiveDocId(docId); setShowDocs(false) }}
         />
+      )}
+
+      {/* Embedded document editor overlay */}
+      {activeDocId && (
+        <div className="absolute inset-0 z-40 bg-gray-950/95 backdrop-blur-sm">
+          <EmbeddedDocEditor
+            boardId={boardId}
+            docId={activeDocId}
+            onClose={() => setActiveDocId(null)}
+          />
+        </div>
       )}
     </div>
   )

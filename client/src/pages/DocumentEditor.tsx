@@ -8,9 +8,26 @@ import Placeholder from '@tiptap/extension-placeholder'
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
 
+interface EmbeddedProps {
+  boardId: string
+  docId: string
+  onClose: () => void
+}
+
+/** Embedded document editor panel (used within Board page) */
+export function EmbeddedDocEditor({ boardId, docId, onClose }: EmbeddedProps) {
+  return <DocumentEditorInner boardId={boardId} docId={docId} onClose={onClose} />
+}
+
+/** Standalone page (used via /board/:boardId/doc/:docId route) */
 export default function DocumentEditor() {
   const { boardId, docId } = useParams<{ boardId: string; docId: string }>()
   const navigate = useNavigate()
+  if (!boardId || !docId) return null
+  return <DocumentEditorInner boardId={boardId} docId={docId} onClose={() => navigate(`/board/${boardId}`)} standalone />
+}
+
+function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId: string; docId: string; onClose: () => void; standalone?: boolean }) {
   const [title, setTitle] = useState('')
   const [loading, setLoading] = useState(true)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -38,7 +55,7 @@ export default function DocumentEditor() {
     ],
     editorProps: {
       attributes: {
-        class: 'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[calc(100vh-120px)] px-8 py-6',
+        class: 'prose prose-invert prose-sm max-w-none focus:outline-none min-h-[300px] px-8 py-6',
       },
     },
     onUpdate: ({ editor }) => {
@@ -57,7 +74,7 @@ export default function DocumentEditor() {
       if (editor && doc.content && Object.keys(doc.content).length > 0) {
         editor.commands.setContent(doc.content)
       }
-    }).catch(() => navigate(`/board/${boardId}`))
+    }).catch(() => onClose())
       .finally(() => setLoading(false))
   }, [boardId, docId, editor])
 
@@ -73,24 +90,28 @@ export default function DocumentEditor() {
     } catch {}
   }
 
+  const wrapperClass = standalone
+    ? 'w-screen h-screen bg-gray-950 flex flex-col'
+    : 'w-full h-full bg-gray-950 flex flex-col'
+
   if (loading) {
     return (
-      <div className="w-screen h-screen bg-gray-950 flex items-center justify-center">
+      <div className={`${wrapperClass} items-center justify-center`}>
         <p className="text-gray-400 text-sm">Loading document...</p>
       </div>
     )
   }
 
   return (
-    <div className="w-screen h-screen bg-gray-950 flex flex-col">
+    <div className={wrapperClass}>
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`/board/${boardId}`)}
+            onClick={onClose}
             className="text-gray-400 hover:text-white text-sm"
           >
-            ← Back to Board
+            {standalone ? '← Back to Board' : '← Close'}
           </button>
 
           {editingTitle ? (
