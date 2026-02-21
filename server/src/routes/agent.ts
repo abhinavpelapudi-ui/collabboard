@@ -36,6 +36,52 @@ agent.post('/command', requireAuth, async (c) => {
   )
   const boardState = objects.map(o => ({ id: o.id, type: o.type, ...(o as any).props }))
 
+  // Fetch project context if board belongs to a project
+  let projectContext: any = null
+  const { rows: boardRows } = await pool.query(
+    `SELECT project_id FROM boards WHERE id = $1`, [boardId]
+  )
+  const projectId = boardRows[0]?.project_id
+  if (projectId) {
+    const { rows: projRows } = await pool.query(
+      `SELECT name, description, status, industry, start_date, end_date FROM projects WHERE id = $1`,
+      [projectId]
+    )
+    if (projRows[0]) {
+      // Get sibling boards
+      const { rows: siblingRows } = await pool.query(
+        `SELECT b.id, b.title, (SELECT COUNT(*)::int FROM objects WHERE board_id = b.id) AS object_count
+         FROM boards b WHERE b.project_id = $1 AND b.id != $2 ORDER BY b.created_at DESC LIMIT 10`,
+        [projectId, boardId]
+      )
+      // Get task stats across project
+      const { rows: statsRows } = await pool.query(
+        `SELECT
+           COUNT(*)::int AS total_objects,
+           COUNT(*) FILTER (WHERE o.props->>'status' = 'done')::int AS done_count,
+           COUNT(*) FILTER (WHERE o.props->>'status' = 'in_progress')::int AS in_progress_count,
+           COUNT(*) FILTER (WHERE o.props->>'status' = 'todo')::int AS todo_count
+         FROM objects o JOIN boards b ON b.id = o.board_id WHERE b.project_id = $1`,
+        [projectId]
+      )
+      // Get unique assignees
+      const { rows: assigneeRows } = await pool.query(
+        `SELECT DISTINCT o.props->>'assigned_to' AS assignee
+         FROM objects o JOIN boards b ON b.id = o.board_id
+         WHERE b.project_id = $1 AND o.props->>'assigned_to' IS NOT NULL AND o.props->>'assigned_to' != ''`,
+        [projectId]
+      )
+      projectContext = {
+        ...projRows[0],
+        sibling_boards: siblingRows,
+        task_stats: {
+          ...statsRows[0],
+          assignees: assigneeRows.map(r => r.assignee),
+        },
+      }
+    }
+  }
+
   // Forward to Python agent
   let agentResult: any
   try {
@@ -48,6 +94,7 @@ agent.post('/command', requireAuth, async (c) => {
         board_state: boardState,
         user_id: userId,
         model: model || '',
+        project_context: projectContext,
       }),
     })
     if (!resp.ok) {

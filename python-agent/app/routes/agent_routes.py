@@ -36,6 +36,7 @@ async def handle_command(request: AgentCommandRequest):
         board_state=request.board_state,
         board_id=request.board_id,
         model_id=request.model or DEFAULT_MODEL_ID,
+        project_context=request.project_context,
     )
 
     return AgentCommandResponse(

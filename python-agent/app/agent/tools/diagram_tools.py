@@ -3,7 +3,7 @@
 import uuid
 from langchain_core.tools import tool
 
-from app.services.chart_service import render_chart
+from app.services.chart_service import render_chart, render_gantt
 
 
 def _new_temp_id(prefix: str = "obj") -> str:
@@ -290,44 +290,36 @@ def generate_system_diagram(
 
 
 @tool
-def generate_project_tracker(
+def generate_gantt_chart(
     tasks: list[dict],
-    title: str = "Project Tracker",
+    title: str = "Project Timeline",
     start_x: int = 50,
     start_y: int = 50,
 ) -> list[dict]:
-    """Generate a project completion visualization with pie chart, bar chart, and summary.
+    """Generate a Gantt chart showing project timeline with task bars on a date axis.
 
     IMPORTANT: Use get_board_layout first to determine start_x and start_y.
 
     Args:
-        tasks: List of dicts with name (str) and status (str: "todo"|"in_progress"|"done")
-        title: Tracker title
+        tasks: List of dicts with name (str), start_date (str YYYY-MM-DD), end_date (str YYYY-MM-DD), status (str: "todo"|"in_progress"|"review"|"done"), assignee (str, optional)
+        title: Chart title
         start_x: X coordinate for placement
         start_y: Y coordinate for placement
     """
     actions = []
-
-    # Count statuses
-    counts = {"todo": 0, "in_progress": 0, "done": 0}
-    for t in tasks:
-        s = t.get("status", "todo")
-        if s in counts:
-            counts[s] += 1
-
-    total = len(tasks)
-    done_pct = round(counts["done"] / total * 100) if total > 0 else 0
-
-    chart_w, chart_h = 400, 300
+    n = len(tasks)
+    chart_w = 800
+    chart_h = max(400, n * 35 + 120)
     padding = 30
-    frame_w = chart_w * 2 + padding * 3
-    frame_h = chart_h + padding * 2 + 100
+
+    frame_w = chart_w + padding * 2
+    frame_h = chart_h + padding * 2 + 60
 
     # Frame
     actions.append({
         "action": "create",
         "object_type": "frame",
-        "temp_id": _new_temp_id("tracker"),
+        "temp_id": _new_temp_id("gantt"),
         "props": {
             "title": title,
             "x": start_x,
@@ -340,12 +332,20 @@ def generate_project_tracker(
     })
 
     # Summary text
+    counts = {"todo": 0, "in_progress": 0, "review": 0, "done": 0}
+    for t in tasks:
+        s = t.get("status", "todo")
+        if s in counts:
+            counts[s] += 1
+    total = len(tasks)
+    done_pct = round(counts["done"] / total * 100) if total > 0 else 0
+
     actions.append({
         "action": "create",
         "object_type": "text",
-        "temp_id": _new_temp_id("sum"),
+        "temp_id": _new_temp_id("gsum"),
         "props": {
-            "text": f"{done_pct}% Complete  |  {counts['done']}/{total} tasks done  |  {counts['in_progress']} in progress  |  {counts['todo']} to do",
+            "text": f"{done_pct}% Complete  |  {counts['done']}/{total} done  |  {counts['in_progress']} in progress  |  {counts['todo']} to do",
             "x": start_x + padding,
             "y": start_y + 60,
             "width": frame_w - padding * 2,
@@ -356,51 +356,21 @@ def generate_project_tracker(
         },
     })
 
-    # Pie chart — completion
-    pie_url = render_chart(
-        chart_type="pie",
-        data={
-            "labels": ["Done", "In Progress", "To Do"],
-            "values": [counts["done"], counts["in_progress"], counts["todo"]],
-        },
-        title="Completion",
+    # Gantt chart image
+    gantt_url = render_gantt(
+        tasks=tasks,
+        title=title,
         width_px=chart_w,
         height_px=chart_h,
     )
     actions.append({
         "action": "create",
         "object_type": "image",
-        "temp_id": _new_temp_id("pie"),
+        "temp_id": _new_temp_id("gchart"),
         "props": {
-            "src": pie_url,
-            "alt": "Project completion pie chart",
+            "src": gantt_url,
+            "alt": f"Gantt chart: {title}",
             "x": start_x + padding,
-            "y": start_y + 100,
-            "width": chart_w,
-            "height": chart_h,
-            "rotation": 0,
-        },
-    })
-
-    # Bar chart — status breakdown
-    bar_url = render_chart(
-        chart_type="bar",
-        data={
-            "labels": ["To Do", "In Progress", "Done"],
-            "values": [counts["todo"], counts["in_progress"], counts["done"]],
-        },
-        title="Status Breakdown",
-        width_px=chart_w,
-        height_px=chart_h,
-    )
-    actions.append({
-        "action": "create",
-        "object_type": "image",
-        "temp_id": _new_temp_id("bar"),
-        "props": {
-            "src": bar_url,
-            "alt": "Status breakdown bar chart",
-            "x": start_x + padding + chart_w + padding,
             "y": start_y + 100,
             "width": chart_w,
             "height": chart_h,
@@ -411,4 +381,4 @@ def generate_project_tracker(
     return actions
 
 
-DIAGRAM_TOOLS = [generate_sequence_diagram, generate_system_diagram, generate_project_tracker]
+DIAGRAM_TOOLS = [generate_sequence_diagram, generate_system_diagram, generate_gantt_chart]

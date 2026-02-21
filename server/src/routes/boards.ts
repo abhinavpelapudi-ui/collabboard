@@ -13,12 +13,14 @@ export async function getUserRole(boardId: string, userId: string): Promise<Boar
     `SELECT
        CASE WHEN b.owner_id = $2 THEN 'owner'
             WHEN bm.user_id IS NOT NULL THEN bm.role
+            WHEN pm.user_id IS NOT NULL THEN pm.role
             ELSE wm.role END AS role
      FROM boards b
      LEFT JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = $2
+     LEFT JOIN project_members pm ON pm.project_id = b.project_id AND pm.user_id = $2
      LEFT JOIN workspace_members wm ON wm.workspace_id = b.workspace_id AND wm.user_id = $2
      WHERE b.id = $1
-       AND (b.owner_id = $2 OR bm.user_id = $2 OR wm.user_id = $2)`,
+       AND (b.owner_id = $2 OR bm.user_id = $2 OR pm.user_id = $2 OR wm.user_id = $2)`,
     [boardId, userId]
   )
   return (rows[0]?.role as BoardRole) ?? null
@@ -33,6 +35,7 @@ boards.get('/', requireAuth, async (c) => {
          (SELECT COUNT(*) FROM objects WHERE board_id = b.id) AS object_count,
          CASE WHEN b.owner_id = $1 THEN 'owner'
               WHEN bm.user_id IS NOT NULL THEN bm.role
+              WHEN pm.user_id IS NOT NULL THEN pm.role
               ELSE wm.role END AS role,
          (SELECT COALESCE(json_agg(c), '[]'::json) FROM (
            SELECT u.id AS user_id, u.name, u.email
@@ -44,8 +47,9 @@ boards.get('/', requireAuth, async (c) => {
          ) c) AS contributors
        FROM boards b
        LEFT JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = $1
+       LEFT JOIN project_members pm ON pm.project_id = b.project_id AND pm.user_id = $1
        LEFT JOIN workspace_members wm ON wm.workspace_id = b.workspace_id AND wm.user_id = $1
-       WHERE b.owner_id = $1 OR bm.user_id = $1 OR wm.user_id = $1
+       WHERE b.owner_id = $1 OR bm.user_id = $1 OR pm.user_id = $1 OR wm.user_id = $1
        ORDER BY b.id, b.created_at DESC`,
       [c.get('userId')]
     )
@@ -66,8 +70,9 @@ boards.post('/', requireAuth, async (c) => {
   const schema = z.object({
     title: z.string().min(1).max(100).default('Untitled Board'),
     workspaceId: z.string().uuid().optional().nullable(),
+    projectId: z.string().uuid().optional().nullable(),
   })
-  const { title, workspaceId } = schema.parse(body)
+  const { title, workspaceId, projectId } = schema.parse(body)
 
   try {
     await pool.query(
@@ -102,8 +107,8 @@ boards.post('/', requireAuth, async (c) => {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO boards (title, owner_id, workspace_id) VALUES ($1, $2, $3) RETURNING *`,
-      [title, c.get('userId'), workspaceId ?? null]
+      `INSERT INTO boards (title, owner_id, workspace_id, project_id) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [title, c.get('userId'), workspaceId ?? null, projectId ?? null]
     )
     const board = rows[0]
 
@@ -149,12 +154,14 @@ boards.get('/:id', requireAuth, async (c) => {
       `SELECT b.*,
          CASE WHEN b.owner_id = $2 THEN 'owner'
               WHEN bm.user_id IS NOT NULL THEN bm.role
+              WHEN pm.user_id IS NOT NULL THEN pm.role
               ELSE wm.role END AS role
        FROM boards b
        LEFT JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = $2
+       LEFT JOIN project_members pm ON pm.project_id = b.project_id AND pm.user_id = $2
        LEFT JOIN workspace_members wm ON wm.workspace_id = b.workspace_id AND wm.user_id = $2
        WHERE b.id = $1
-         AND (b.owner_id = $2 OR bm.user_id = $2 OR wm.user_id = $2)`,
+         AND (b.owner_id = $2 OR bm.user_id = $2 OR pm.user_id = $2 OR wm.user_id = $2)`,
       [c.req.param('id'), c.get('userId')]
     )
     if (!rows[0]) return c.json({ error: 'Board not found' }, 404)
@@ -171,6 +178,7 @@ boards.patch('/:id', requireAuth, async (c) => {
   const schema = z.object({
     title: z.string().min(1).max(100).optional(),
     workspaceId: z.string().uuid().nullable().optional(),
+    projectId: z.string().uuid().nullable().optional(),
   })
   const parsed = schema.parse(body)
 
@@ -178,9 +186,9 @@ boards.patch('/:id', requireAuth, async (c) => {
     const role = await getUserRole(c.req.param('id'), c.get('userId'))
     if (!role || role === 'viewer') return c.json({ error: 'Not authorized' }, 403)
 
-    // Moving to a workspace requires owner role
-    if ('workspaceId' in parsed && role !== 'owner') {
-      return c.json({ error: 'Only the board owner can move boards to a workspace' }, 403)
+    // Moving to a workspace or project requires owner role
+    if (('workspaceId' in parsed || 'projectId' in parsed) && role !== 'owner') {
+      return c.json({ error: 'Only the board owner can move boards' }, 403)
     }
 
     const updates: string[] = []
@@ -189,6 +197,7 @@ boards.patch('/:id', requireAuth, async (c) => {
 
     if (parsed.title !== undefined) { updates.push(`title = $${i++}`); params.push(parsed.title) }
     if ('workspaceId' in parsed) { updates.push(`workspace_id = $${i++}`); params.push(parsed.workspaceId) }
+    if ('projectId' in parsed) { updates.push(`project_id = $${i++}`); params.push(parsed.projectId) }
 
     if (!updates.length) return c.json({ error: 'Nothing to update' }, 400)
 

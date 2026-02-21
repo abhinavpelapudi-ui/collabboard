@@ -103,6 +103,32 @@ CREATE TABLE IF NOT EXISTS workspace_members (
 -- boards.workspace_id links boards to a workspace (NULL = Personal)
 -- ALTER TABLE boards ADD COLUMN IF NOT EXISTS workspace_id UUID REFERENCES workspaces(id) ON DELETE SET NULL;
 
+-- Projects (groups of boards within a workspace, with rich metadata)
+CREATE TABLE IF NOT EXISTS projects (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+  name         TEXT NOT NULL,
+  description  TEXT DEFAULT '',
+  status       TEXT DEFAULT 'active',   -- 'active' | 'paused' | 'completed' | 'archived'
+  industry     TEXT DEFAULT '',          -- 'healthcare' | 'construction' | 'marketing' | 'engineering' | etc.
+  color        TEXT DEFAULT '#6366f1',
+  start_date   DATE,
+  end_date     DATE,
+  owner_id     TEXT NOT NULL REFERENCES users(id),
+  metadata     JSONB DEFAULT '{}',       -- industry-specific flexible fields
+  created_at   TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS project_members (
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  user_id    TEXT REFERENCES users(id) ON DELETE CASCADE,
+  role       TEXT NOT NULL DEFAULT 'editor',  -- 'owner' | 'editor' | 'viewer'
+  PRIMARY KEY (project_id, user_id)
+);
+
+-- boards.project_id links boards to a project (NULL = unassigned)
+-- ALTER TABLE boards ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES projects(id) ON DELETE SET NULL;
+
 -- Board chat messages
 CREATE TABLE IF NOT EXISTS chat_messages (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -165,3 +191,7 @@ CREATE INDEX IF NOT EXISTS idx_feedback_board   ON ai_feedback(board_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_trace   ON ai_feedback(trace_id);
 CREATE INDEX IF NOT EXISTS idx_obj_comments_object ON object_comments(object_id);
 CREATE INDEX IF NOT EXISTS idx_board_docs_board ON board_documents(board_id);
+CREATE INDEX IF NOT EXISTS idx_projects_workspace ON projects(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_projects_owner ON projects(owner_id);
+CREATE INDEX IF NOT EXISTS idx_project_members_user ON project_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_boards_project ON boards(project_id);

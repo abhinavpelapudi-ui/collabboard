@@ -38,10 +38,13 @@ EDITING EXISTING OBJECTS:
 - Use find_objects_by_text() to search for objects by text content.
 - NEVER recreate an object that already exists. Update it in place.
 
-DIAGRAMS:
+DIAGRAMS & PLANNING:
 - Use generate_sequence_diagram for message flow between actors/services.
 - Use generate_system_diagram for architecture and component layouts.
-- Use generate_project_tracker to visualize task completion with charts.
+- Use generate_gantt_chart for timeline/schedule visualization with start/end dates.
+- Use generate_flow_diagram for plans, workflows, and processes as connected nodes.
+- Use generate_team_graph to show who is working on what (person → task connections).
+- Use generate_sprint_board for Kanban-style sprint boards from task lists.
 
 DOCUMENT ANALYSIS:
 - Use analyze_document to create visual summaries, key points, timelines, or stats from uploaded docs.
@@ -189,7 +192,58 @@ def _build_board_context(board_state: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def run_agent(command: str, board_state: list[dict], board_id: str = "", model_id: str = DEFAULT_MODEL_ID) -> dict:
+def _build_project_context(project_context: dict | None) -> str:
+    """Build a project context string for project-aware prompting."""
+    if not project_context:
+        return ""
+
+    lines = ["\nPROJECT CONTEXT:"]
+    name = project_context.get("name", "")
+    if name:
+        lines.append(f"  Project: {name}")
+    desc = project_context.get("description", "")
+    if desc:
+        lines.append(f"  Description: {desc}")
+    industry = project_context.get("industry", "")
+    if industry:
+        lines.append(f"  Industry: {industry}")
+    status = project_context.get("status", "")
+    if status:
+        lines.append(f"  Status: {status}")
+    start = project_context.get("start_date", "")
+    end = project_context.get("end_date", "")
+    if start or end:
+        lines.append(f"  Timeline: {start or '?'} → {end or '?'}")
+
+    # Sibling boards in the same project
+    siblings = project_context.get("sibling_boards", [])
+    if siblings:
+        lines.append(f"  Other boards in this project ({len(siblings)}):")
+        for sb in siblings[:10]:
+            obj_count = sb.get("object_count", 0)
+            lines.append(f"    - \"{sb.get('title', 'Untitled')}\" ({obj_count} objects)")
+
+    # Cross-board task summary
+    task_stats = project_context.get("task_stats")
+    if task_stats:
+        lines.append(f"  Project tasks: {task_stats.get('total_objects', 0)} total, "
+                      f"{task_stats.get('done_count', 0)} done, "
+                      f"{task_stats.get('in_progress_count', 0)} in progress, "
+                      f"{task_stats.get('todo_count', 0)} todo")
+        assignees = task_stats.get("assignees", [])
+        if assignees:
+            lines.append(f"  Assignees: {', '.join(assignees[:10])}")
+
+    return "\n".join(lines)
+
+
+def run_agent(
+    command: str,
+    board_state: list[dict],
+    board_id: str = "",
+    model_id: str = DEFAULT_MODEL_ID,
+    project_context: dict | None = None,
+) -> dict:
     """Run the agent with a user command and return board actions.
 
     Args:
@@ -197,6 +251,7 @@ def run_agent(command: str, board_state: list[dict], board_id: str = "", model_i
         board_state: Current objects on the board
         board_id: Board ID for document search scoping
         model_id: LLM model to use (e.g. 'gpt-4o-mini', 'claude-haiku')
+        project_context: Optional project metadata when board belongs to a project
 
     Returns:
         dict with 'message', 'actions', 'actions_performed', 'trace_id'
@@ -210,8 +265,9 @@ def run_agent(command: str, board_state: list[dict], board_id: str = "", model_i
 
     # Build context with full object details so the agent can identify objects for edits
     board_context = _build_board_context(board_state)
+    project_ctx = _build_project_context(project_context)
 
-    user_message = f"Board ID: {board_id}\n{board_context}\n\nCommand: {command}"
+    user_message = f"Board ID: {board_id}\n{board_context}{project_ctx}\n\nCommand: {command}"
 
     # Collect callbacks for dual tracing
     callbacks = []

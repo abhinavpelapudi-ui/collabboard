@@ -103,6 +103,7 @@ export interface Board {
   title: string
   owner_id: string
   workspace_id?: string | null
+  project_id?: string | null
   created_at: string
   role?: BoardRole  // current user's role on this board
   contributors?: BoardContributor[]
@@ -126,6 +127,36 @@ export interface Workspace {
   created_at: string
   role: WorkspaceRole
   member_count?: number
+}
+
+// ─── Project ─────────────────────────────────────────────────────────────────
+
+export type ProjectRole = 'owner' | 'editor' | 'viewer'
+export type ProjectStatus = 'active' | 'paused' | 'completed' | 'archived'
+
+export interface Project {
+  id: string
+  workspace_id: string
+  name: string
+  description?: string
+  status: ProjectStatus
+  industry?: string
+  color?: string
+  start_date?: string
+  end_date?: string
+  owner_id: string
+  metadata?: Record<string, unknown>
+  created_at: string
+  role: ProjectRole
+  member_count?: number
+  board_count?: number
+}
+
+export interface ProjectMember {
+  user_id: string
+  name: string
+  email: string
+  role: ProjectRole
 }
 
 // ─── User ────────────────────────────────────────────────────────────────────

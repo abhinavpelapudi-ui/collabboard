@@ -5,6 +5,7 @@ import SignIn from './pages/SignIn'
 import Dashboard from './pages/Dashboard'
 import Board from './pages/Board'
 import DocumentEditor from './pages/DocumentEditor'
+import ProjectPage from './pages/ProjectPage'
 import Pricing from './pages/Pricing'
 import ActivateLicense from './pages/ActivateLicense'
 import OAuthCallback from './pages/OAuthCallback'
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/activate" element={<ProtectedRoute><ActivateLicense /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/project/:projectId" element={<ProtectedRoute><ProjectPage /></ProtectedRoute>} />
         <Route path="/board/:boardId" element={<ProtectedRoute><Board /></ProtectedRoute>} />
         <Route path="/board/:boardId/doc/:docId" element={<ProtectedRoute><DocumentEditor /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

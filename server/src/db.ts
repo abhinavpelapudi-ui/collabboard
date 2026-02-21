@@ -67,6 +67,33 @@ export async function runMigrations() {
         created_at TIMESTAMPTZ DEFAULT now()
       )`],
     ['board_documents index', `CREATE INDEX IF NOT EXISTS idx_board_docs_board ON board_documents(board_id)`],
+    ['projects table', `
+      CREATE TABLE IF NOT EXISTS projects (
+        id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+        name         TEXT NOT NULL,
+        description  TEXT DEFAULT '',
+        status       TEXT DEFAULT 'active',
+        industry     TEXT DEFAULT '',
+        color        TEXT DEFAULT '#6366f1',
+        start_date   DATE,
+        end_date     DATE,
+        owner_id     TEXT NOT NULL REFERENCES users(id),
+        metadata     JSONB DEFAULT '{}',
+        created_at   TIMESTAMPTZ DEFAULT now()
+      )`],
+    ['project_members table', `
+      CREATE TABLE IF NOT EXISTS project_members (
+        project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+        user_id    TEXT REFERENCES users(id) ON DELETE CASCADE,
+        role       TEXT NOT NULL DEFAULT 'editor',
+        PRIMARY KEY (project_id, user_id)
+      )`],
+    ['boards.project_id', `ALTER TABLE boards ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES projects(id) ON DELETE SET NULL`],
+    ['projects indexes', `CREATE INDEX IF NOT EXISTS idx_projects_workspace ON projects(workspace_id)`],
+    ['projects owner index', `CREATE INDEX IF NOT EXISTS idx_projects_owner ON projects(owner_id)`],
+    ['project_members index', `CREATE INDEX IF NOT EXISTS idx_project_members_user ON project_members(user_id)`],
+    ['boards project index', `CREATE INDEX IF NOT EXISTS idx_boards_project ON boards(project_id)`],
   ]
 
   for (const [name, sql] of migrations) {

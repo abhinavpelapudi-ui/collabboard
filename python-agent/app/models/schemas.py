@@ -12,6 +12,7 @@ class AgentCommandRequest(BaseModel):
     attachments: list[dict] = []  # [{"fileId": "...", "fileName": "..."}]
     user_id: str = ""
     model: str = ""  # LLM model_id (e.g. "gpt-4o-mini", "claude-haiku")
+    project_context: dict | None = None  # Project metadata when board belongs to a project
 
 
 class AgentCommandResponse(BaseModel):

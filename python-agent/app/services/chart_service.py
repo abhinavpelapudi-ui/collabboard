@@ -104,3 +104,122 @@ def render_chart(
 
     b64 = base64.b64encode(buf.read()).decode("utf-8")
     return f"data:image/png;base64,{b64}"
+
+
+def render_gantt(
+    tasks: list[dict],
+    title: str = "Project Timeline",
+    width_px: int = 800,
+    height_px: int = 400,
+) -> str:
+    """Render a Gantt chart and return as a base64 data URL.
+
+    Args:
+        tasks: List of dicts with keys: name (str), start_date (str YYYY-MM-DD),
+               end_date (str YYYY-MM-DD), status (str), assignee (str, optional)
+        title: Chart title
+        width_px: Image width in pixels
+        height_px: Image height in pixels
+
+    Returns:
+        A data:image/png;base64,... URL string
+    """
+    from datetime import datetime, timedelta
+    from matplotlib.patches import Patch
+
+    status_colors = {
+        "done": "#22c55e",
+        "in_progress": "#f59e0b",
+        "review": "#06b6d4",
+        "todo": "#6b7280",
+    }
+
+    # Parse tasks and compute dates
+    parsed = []
+    for t in tasks:
+        name = t.get("name", "Task")
+        try:
+            start = datetime.strptime(t.get("start_date", ""), "%Y-%m-%d")
+        except (ValueError, TypeError):
+            start = datetime.now()
+        try:
+            end = datetime.strptime(t.get("end_date", ""), "%Y-%m-%d")
+        except (ValueError, TypeError):
+            end = start + timedelta(days=7)
+        if end <= start:
+            end = start + timedelta(days=1)
+        status = t.get("status", "todo")
+        assignee = t.get("assignee", "")
+        parsed.append({"name": name, "start": start, "end": end, "status": status, "assignee": assignee})
+
+    if not parsed:
+        parsed = [{"name": "No tasks", "start": datetime.now(), "end": datetime.now() + timedelta(days=1), "status": "todo", "assignee": ""}]
+
+    n = len(parsed)
+    fig_h = max(height_px, n * 35 + 120) / 100
+    fig, ax = plt.subplots(figsize=(width_px / 100, fig_h), dpi=100)
+
+    # Dark theme
+    fig.patch.set_facecolor(BG_COLOR)
+    ax.set_facecolor(PLOT_BG)
+    ax.tick_params(colors=TEXT_COLOR, which="both")
+    ax.xaxis.label.set_color(TEXT_COLOR)
+    ax.yaxis.label.set_color(TEXT_COLOR)
+    ax.title.set_color(TEXT_COLOR)
+    for spine in ax.spines.values():
+        spine.set_color(GRID_COLOR)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(True, axis="x", color=GRID_COLOR, alpha=0.3)
+
+    # Draw bars
+    for i, task in enumerate(parsed):
+        duration = (task["end"] - task["start"]).days
+        color = status_colors.get(task["status"], "#6b7280")
+        ax.barh(
+            i, duration, left=task["start"].toordinal(),
+            height=0.6, color=color, alpha=0.8, edgecolor="none",
+        )
+        if task["assignee"]:
+            mid = task["start"].toordinal() + duration / 2
+            ax.text(mid, i, task["assignee"], ha="center", va="center",
+                    fontsize=7, color="white", fontweight="bold")
+
+    # Y axis labels
+    ax.set_yticks(list(range(n)))
+    ax.set_yticklabels([t["name"][:30] for t in parsed], fontsize=8, color=TEXT_COLOR)
+    ax.invert_yaxis()
+
+    # X axis: date labels
+    all_starts = [t["start"].toordinal() for t in parsed]
+    all_ends = [t["end"].toordinal() for t in parsed]
+    x_min = min(all_starts) - 2
+    x_max = max(all_ends) + 2
+    ax.set_xlim(x_min, x_max)
+
+    tick_count = min(8, x_max - x_min)
+    tick_step = max(1, (x_max - x_min) // tick_count)
+    tick_positions = list(range(x_min, x_max + 1, tick_step))
+    tick_labels = [datetime.fromordinal(int(d)).strftime("%m/%d") for d in tick_positions]
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels(tick_labels, fontsize=7, color=TEXT_COLOR, rotation=45, ha="right")
+
+    ax.set_title(title, fontsize=12, fontweight="bold", pad=10, color=TEXT_COLOR)
+
+    # Legend
+    legend_elements = [
+        Patch(facecolor=c, label=s.replace("_", " ").title())
+        for s, c in status_colors.items()
+    ]
+    ax.legend(handles=legend_elements, loc="upper right", fontsize=7,
+              facecolor=BG_COLOR, edgecolor=GRID_COLOR, labelcolor=TEXT_COLOR)
+
+    plt.tight_layout()
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight", facecolor=fig.get_facecolor())
+    plt.close(fig)
+    buf.seek(0)
+
+    b64 = base64.b64encode(buf.read()).decode("utf-8")
+    return f"data:image/png;base64,{b64}"

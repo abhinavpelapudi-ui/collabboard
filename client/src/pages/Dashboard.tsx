@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { io, Socket } from 'socket.io-client'
-import { Board, BoardRole, Workspace } from '@collabboard/shared'
+import { Board, BoardRole, Workspace, Project } from '@collabboard/shared'
 import { getToken, getUser } from '../hooks/useAuth'
 import UpgradeModal from '../components/ui/UpgradeModal'
 import UserMenu from '../components/ui/UserMenu'
@@ -10,6 +10,7 @@ import NotificationBell from '../components/ui/NotificationBell'
 import WorkspaceModal from '../components/ui/WorkspaceModal'
 import MoveToWorkspaceModal from '../components/ui/MoveToWorkspaceModal'
 import DashboardAIChat from '../components/ui/DashboardAIChat'
+import ProjectModal from '../components/ui/ProjectModal'
 
 const FREE_BOARD_LIMIT = 2
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
@@ -30,33 +31,44 @@ export default function Dashboard() {
 
   const [boards, setBoards] = useState<Board[]>([])
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [workspaceModal, setWorkspaceModal] = useState<{ id: string; name: string; isOwner: boolean } | null>(null)
   const [moveBoard, setMoveBoard] = useState<Board | null>(null)
   const [creatingWorkspace, setCreatingWorkspace] = useState(false)
   const [newWsName, setNewWsName] = useState('')
+  const [projectModal, setProjectModal] = useState<string | null>(null) // workspaceId to create project in
+  const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set())
   const socketRef = useRef<Socket | null>(null)
 
   const plan = user?.plan ?? 'free'
   const ownedCount = boards.filter(b => b.role === 'owner').length
   const atLimit = plan === 'free' && ownedCount >= FREE_BOARD_LIMIT
 
-  const visibleBoards = boards.filter(b =>
-    selectedWorkspaceId === null ? !b.workspace_id : b.workspace_id === selectedWorkspaceId
-  )
+  // Filter boards based on selected workspace/project
+  const visibleBoards = boards.filter(b => {
+    if (selectedProjectId) return b.project_id === selectedProjectId
+    if (selectedWorkspaceId) return b.workspace_id === selectedWorkspaceId && !b.project_id
+    return !b.workspace_id
+  })
+
   const selectedWorkspace = workspaces.find(w => w.id === selectedWorkspaceId) ?? null
+  const selectedProject = projects.find(p => p.id === selectedProjectId) ?? null
 
   useEffect(() => {
     Promise.all([
       axios.get(`${SERVER_URL}/api/boards`, { headers: authHeaders() }),
       axios.get(`${SERVER_URL}/api/workspaces`, { headers: authHeaders() }),
-    ]).then(([boardsRes, wsRes]) => {
+      axios.get(`${SERVER_URL}/api/projects`, { headers: authHeaders() }),
+    ]).then(([boardsRes, wsRes, projRes]) => {
       setBoards(boardsRes.data)
       setWorkspaces(wsRes.data)
+      setProjects(projRes.data)
       setLoading(false)
     }).catch(() => setLoading(false))
 
@@ -72,7 +84,11 @@ export default function Dashboard() {
     try {
       const { data } = await axios.post(
         `${SERVER_URL}/api/boards`,
-        { title: 'Untitled Board', workspaceId: selectedWorkspaceId ?? undefined },
+        {
+          title: 'Untitled Board',
+          workspaceId: selectedProjectId ? selectedProject?.workspace_id : (selectedWorkspaceId ?? undefined),
+          projectId: selectedProjectId ?? undefined,
+        },
         { headers: authHeaders() }
       )
       navigate(`/board/${data.id}`)
@@ -104,11 +120,45 @@ export default function Dashboard() {
       )
       setWorkspaces(prev => [...prev, data])
       setSelectedWorkspaceId(data.id)
+      setSelectedProjectId(null)
       setNewWsName('')
       setCreatingWorkspace(false)
     } catch (err: any) {
       if (err.response?.data?.upgradeRequired) { setCreatingWorkspace(false); setNewWsName(''); setShowUpgrade(true) }
     }
+  }
+
+  function selectWorkspace(wsId: string | null) {
+    setSelectedWorkspaceId(wsId)
+    setSelectedProjectId(null)
+  }
+
+  function selectProject(projId: string) {
+    const proj = projects.find(p => p.id === projId)
+    if (proj) {
+      setSelectedWorkspaceId(proj.workspace_id)
+      setSelectedProjectId(projId)
+    }
+  }
+
+  function toggleWorkspaceExpand(wsId: string) {
+    setExpandedWorkspaces(prev => {
+      const next = new Set(prev)
+      if (next.has(wsId)) next.delete(wsId)
+      else next.add(wsId)
+      return next
+    })
+  }
+
+  // Get heading text
+  let headingText = 'Personal'
+  let headingSubtext = ''
+  if (selectedProject) {
+    headingText = selectedProject.name
+    headingSubtext = `${selectedProject.board_count ?? 0} boards · ${selectedProject.status}`
+  } else if (selectedWorkspace) {
+    headingText = selectedWorkspace.name
+    headingSubtext = `${selectedWorkspace.member_count} member${Number(selectedWorkspace.member_count) !== 1 ? 's' : ''} · ${selectedWorkspace.role}`
   }
 
   return (
@@ -139,8 +189,8 @@ export default function Dashboard() {
 
           {/* Personal */}
           <button
-            onClick={() => setSelectedWorkspaceId(null)}
-            className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors text-left ${selectedWorkspaceId === null ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}
+            onClick={() => selectWorkspace(null)}
+            className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors text-left ${!selectedWorkspaceId && !selectedProjectId ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}
           >
             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -148,33 +198,81 @@ export default function Dashboard() {
             Personal
           </button>
 
-          {/* Workspace list */}
-          {workspaces.map(ws => (
-            <div
-              key={ws.id}
-              className={`group flex items-center px-4 py-2 transition-colors ${selectedWorkspaceId === ws.id ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}
-            >
-              <button
-                className="flex-1 flex items-center gap-2.5 text-sm text-left overflow-hidden"
-                onClick={() => setSelectedWorkspaceId(ws.id)}
-              >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                <span className="truncate">{ws.name}</span>
-              </button>
-              <button
-                onClick={() => setWorkspaceModal({ id: ws.id, name: ws.name, isOwner: ws.role === 'owner' })}
-                className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-white transition-all flex-shrink-0 ml-1 p-0.5"
-                title="Workspace settings"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
-            </div>
-          ))}
+          {/* Workspace list with projects */}
+          {workspaces.map(ws => {
+            const wsProjects = projects.filter(p => p.workspace_id === ws.id)
+            const isExpanded = expandedWorkspaces.has(ws.id) || selectedWorkspaceId === ws.id
+            const isWsSelected = selectedWorkspaceId === ws.id && !selectedProjectId
+
+            return (
+              <div key={ws.id}>
+                <div className={`group flex items-center px-4 py-2 transition-colors ${isWsSelected ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/60 hover:text-white'}`}>
+                  {/* Expand/collapse toggle */}
+                  {wsProjects.length > 0 && (
+                    <button
+                      onClick={() => toggleWorkspaceExpand(ws.id)}
+                      className="text-gray-600 hover:text-gray-400 mr-1 flex-shrink-0"
+                    >
+                      <svg className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M6 6l4 4-4 4V6z" />
+                      </svg>
+                    </button>
+                  )}
+                  {wsProjects.length === 0 && <span className="w-4 flex-shrink-0" />}
+
+                  <button
+                    className="flex-1 flex items-center gap-2 text-sm text-left overflow-hidden"
+                    onClick={() => selectWorkspace(ws.id)}
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <span className="truncate">{ws.name}</span>
+                  </button>
+                  <button
+                    onClick={() => setWorkspaceModal({ id: ws.id, name: ws.name, isOwner: ws.role === 'owner' })}
+                    className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-white transition-all flex-shrink-0 ml-1 p-0.5"
+                    title="Workspace settings"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Projects under this workspace */}
+                {isExpanded && wsProjects.map(proj => (
+                  <button
+                    key={proj.id}
+                    onClick={() => selectProject(proj.id)}
+                    className={`w-full flex items-center gap-2 pl-10 pr-4 py-1.5 text-xs transition-colors text-left ${
+                      selectedProjectId === proj.id ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-800/60 hover:text-gray-300'
+                    }`}
+                  >
+                    <div
+                      className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                      style={{ backgroundColor: proj.color || '#6366f1' }}
+                    />
+                    <span className="truncate">{proj.name}</span>
+                  </button>
+                ))}
+
+                {/* New project button under expanded workspace */}
+                {isExpanded && (ws.role === 'owner' || ws.role === 'editor') && (
+                  <button
+                    onClick={() => setProjectModal(ws.id)}
+                    className="w-full flex items-center gap-1.5 pl-10 pr-4 py-1.5 text-[11px] text-gray-600 hover:text-gray-400 transition-colors text-left"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    New project
+                  </button>
+                )}
+              </div>
+            )
+          })}
 
           {/* New workspace */}
           <div className="px-4 mt-2">
@@ -217,13 +315,27 @@ export default function Dashboard() {
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-semibold">
-                  {selectedWorkspace ? selectedWorkspace.name : 'Personal'}
-                </h2>
-                {selectedWorkspace && (
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {selectedWorkspace.member_count} member{Number(selectedWorkspace.member_count) !== 1 ? 's' : ''} · {selectedWorkspace.role}
-                  </p>
+                <div className="flex items-center gap-2">
+                  {selectedProject && (
+                    <div
+                      className="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold"
+                      style={{ backgroundColor: selectedProject.color || '#6366f1' }}
+                    >
+                      {selectedProject.name[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <h2 className="text-2xl font-semibold">{headingText}</h2>
+                  {selectedProject && (
+                    <button
+                      onClick={() => navigate(`/project/${selectedProject.id}`)}
+                      className="text-xs text-indigo-400 hover:text-indigo-300 ml-2"
+                    >
+                      Open project →
+                    </button>
+                  )}
+                </div>
+                {headingSubtext && (
+                  <p className="text-xs text-gray-500 mt-0.5">{headingSubtext}</p>
                 )}
               </div>
               <button
@@ -239,7 +351,7 @@ export default function Dashboard() {
             ) : visibleBoards.length === 0 ? (
               <div className="text-center py-20">
                 <p className="text-gray-400 text-lg mb-4">
-                  {selectedWorkspace ? `No boards in ${selectedWorkspace.name} yet` : 'No personal boards yet'}
+                  {selectedProject ? `No boards in ${selectedProject.name} yet` : selectedWorkspace ? `No boards in ${selectedWorkspace.name} yet` : 'No personal boards yet'}
                 </p>
                 <button onClick={createBoard} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-medium">
                   Create your first board
@@ -253,6 +365,8 @@ export default function Dashboard() {
                   const canEdit = boardRole === 'owner' || boardRole === 'editor'
                   const badge = roleBadge[boardRole]
                   const wsName = workspaces.find(w => w.id === board.workspace_id)?.name
+                  const projName = projects.find(p => p.id === board.project_id)?.name
+                  const projColor = projects.find(p => p.id === board.project_id)?.color
 
                   return (
                     <div
@@ -321,6 +435,14 @@ export default function Dashboard() {
                             {wsName}
                           </span>
                         )}
+                        {!selectedProjectId && projName && (
+                          <span
+                            className="text-xs px-1.5 py-0.5 rounded border border-opacity-20"
+                            style={{ color: projColor || '#6366f1', borderColor: projColor || '#6366f1', backgroundColor: `${projColor || '#6366f1'}15` }}
+                          >
+                            {projName}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity flex-wrap">
@@ -379,7 +501,8 @@ export default function Dashboard() {
           onDeleted={() => {
             setWorkspaces(prev => prev.filter(w => w.id !== workspaceModal.id))
             setBoards(prev => prev.map(b => b.workspace_id === workspaceModal.id ? { ...b, workspace_id: null } : b))
-            if (selectedWorkspaceId === workspaceModal.id) setSelectedWorkspaceId(null)
+            setProjects(prev => prev.filter(p => p.workspace_id !== workspaceModal.id))
+            if (selectedWorkspaceId === workspaceModal.id) { setSelectedWorkspaceId(null); setSelectedProjectId(null) }
             setWorkspaceModal(null)
           }}
         />
@@ -394,6 +517,19 @@ export default function Dashboard() {
           onMoved={newWsId => {
             setBoards(prev => prev.map(b => b.id === moveBoard.id ? { ...b, workspace_id: newWsId } : b))
             setMoveBoard(null)
+          }}
+        />
+      )}
+
+      {projectModal && (
+        <ProjectModal
+          workspaceId={projectModal}
+          onClose={() => setProjectModal(null)}
+          onCreated={proj => {
+            setProjects(prev => [...prev, proj])
+            setSelectedProjectId(proj.id)
+            setSelectedWorkspaceId(proj.workspace_id)
+            setExpandedWorkspaces(prev => new Set([...prev, proj.workspace_id]))
           }}
         />
       )}
