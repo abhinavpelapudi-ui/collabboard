@@ -51,7 +51,16 @@ Guidelines:
 - Sticky notes auto-size based on text length, leave 20-30px gaps
 - Colors: yellow (#FEF08A) ideas, blue (#93C5FD) info, green (#86EFAC) done, red (#FCA5A5) blockers
 - For connectors, reference temp_ids of objects you just created
-- ALWAYS call the tools. Do not just describe what you would do."""
+- ALWAYS call the tools. Do not just describe what you would do.
+
+RESPONSE STYLE (CRITICAL):
+- Your final message to the user must be SHORT, friendly, and human-readable.
+- NEVER mention object IDs, temp_ids, coordinates, hex colors, or internal details.
+- NEVER list raw tool outputs or action results.
+- Good: "Done! I created a SWOT analysis with 4 sticky notes."
+- Good: "I've added a sequence diagram showing the login flow between Client, Server, and Database."
+- Bad: "Created sticky obj-a1b2c3d4 at (100,200) with color #FEF08A..."
+- Summarize WHAT you did in plain language, not HOW you did it internally."""
 
 
 ALL_TOOLS = BOARD_TOOLS + CHART_TOOLS + DOCUMENT_TOOLS + SPRINT_TOOLS + PLANNING_TOOLS + DIAGRAM_TOOLS
