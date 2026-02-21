@@ -18,6 +18,7 @@ export function useSocket(boardId: string, onRoleChanged?: (role: BoardRole) => 
   const { updateCursor, removeCursor, clearCursors } = useCursorStore()
   const { setUsers } = usePresenceStore()
   const setConnected = useUIStore(s => s.setConnected)
+  const triggerFit = useUIStore(s => s.triggerFit)
 
   useEffect(() => {
     if (!boardId) return
@@ -41,7 +42,10 @@ export function useSocket(boardId: string, onRoleChanged?: (role: BoardRole) => 
     socket.on('disconnect', () => { setConnected(false); clearCursors() })
     socket.on('connect_error', () => setConnected(false))
     socket.on('reconnect', () => { setConnected(true); socket.emit('board:join', { boardId }) })
-    socket.on('board:state', ({ objects }) => setObjects(objects))
+    socket.on('board:state', ({ objects }) => {
+      setObjects(objects)
+      if (objects?.length > 0) setTimeout(() => triggerFit(), 100)
+    })
     socket.on('cursor:move', (cursor) => updateCursor(cursor))
     socket.on('cursor:leave', ({ userId }) => removeCursor(userId))
     socket.on('object:create', ({ object }) => addObject(object))
