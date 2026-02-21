@@ -46,10 +46,17 @@ def shutdown_tracing():
 
 def get_langfuse_handler():
     """Get a LangFuse callback handler for LangChain agent invocations."""
-    from langfuse.callback import CallbackHandler
-
     if not settings.langfuse_secret_key or not settings.langfuse_public_key:
         return None
+
+    try:
+        from langfuse.callback import CallbackHandler
+    except ImportError:
+        try:
+            from langfuse.langchain import CallbackHandler
+        except ImportError:
+            logger.warning("LangFuse callback handler not available — skipping")
+            return None
 
     return CallbackHandler(
         secret_key=settings.langfuse_secret_key,
