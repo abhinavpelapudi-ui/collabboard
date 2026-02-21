@@ -1,6 +1,7 @@
 """Main agent with multi-provider LLM support and all CollabBoard tools using LangGraph."""
 
 import logging
+import re
 import uuid
 
 from langchain_groq import ChatGroq
@@ -20,6 +21,7 @@ from app.agent.tools.document_tools import DOCUMENT_TOOLS
 from app.agent.tools.sprint_tools import SPRINT_TOOLS
 from app.agent.tools.planning_tools import PLANNING_TOOLS
 from app.agent.tools.diagram_tools import DIAGRAM_TOOLS
+from app.services.layout_service import describe_board_layout, find_open_position
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +29,11 @@ SYSTEM_PROMPT = """You are an AI assistant for CollabBoard, a collaborative whit
 You help users create visual layouts on their boards.
 
 SPATIAL AWARENESS:
-- ALWAYS call get_board_layout() FIRST before creating any objects.
-- Pass needed_width and needed_height to get recommended x, y coordinates for placement.
+- The current board layout is already provided in the user message under "BOARD LAYOUT:".
+- Use that layout info to determine where to place new objects.
+- Only call get_board_layout(needed_width, needed_height) when you need SPECIFIC pixel
+  coordinates for a block of a given width and height — e.g., for complex multi-object
+  diagrams where exact placement matters. Pass actual pixel dimensions, not zeros.
 - Leave at least 20-40px gaps between objects.
 
 EDITING EXISTING OBJECTS:
@@ -68,6 +73,188 @@ RESPONSE STYLE (CRITICAL):
 
 ALL_TOOLS = BOARD_TOOLS + CHART_TOOLS + DOCUMENT_TOOLS + SPRINT_TOOLS + PLANNING_TOOLS + DIAGRAM_TOOLS
 
+# ── Tool-set definitions for intent-based selective loading ──────────────────
+TOOL_SETS: dict[str, list] = {
+    "board_only": BOARD_TOOLS,                                    # 10 tools
+    "chart":      BOARD_TOOLS + CHART_TOOLS,                      # 12 tools
+    "diagram":    BOARD_TOOLS + DIAGRAM_TOOLS + PLANNING_TOOLS,   # 15 tools
+    "sprint":     BOARD_TOOLS + SPRINT_TOOLS,                     # 11 tools
+    "document":   BOARD_TOOLS + DOCUMENT_TOOLS,                   # 12 tools
+    "all":        ALL_TOOLS,                                       # 20 tools
+}
+
+
+def _classify_tool_set(command: str) -> str:
+    """Return the tool-set key appropriate for this command."""
+    cmd = command.lower()
+    if any(w in cmd for w in ["analyze", "summarize", "document", "pdf", "uploaded"]):
+        return "document"
+    if any(w in cmd for w in ["sprint", "kanban", "backlog", "scrum"]):
+        return "sprint"
+    if any(w in cmd for w in ["chart", "dashboard", "bar chart", "pie chart", "line chart"]):
+        return "chart"
+    if any(w in cmd for w in [
+        "sequence diagram", "system diagram", "architecture", "gantt",
+        "flow diagram", "workflow", "team graph", "roadmap", "timeline",
+        "process flow",
+    ]):
+        return "diagram"
+    if any(w in cmd for w in [
+        "sticky", "note", "shape", "frame", "connector", "arrow",
+        "move", "delete", "remove", "update", "change", "edit",
+        "color", "position", "resize",
+    ]):
+        return "board_only"
+    return "all"
+
+
+# ── Deterministic command router ────────────────────────────────────────────
+_COLOR_MAP: dict[str, str] = {
+    "yellow": "#FEF08A", "blue": "#93C5FD", "green": "#86EFAC",
+    "red": "#FCA5A5", "purple": "#DDD6FE", "orange": "#FED7AA",
+    "pink": "#FECACA", "white": "#FFFFFF",
+}
+
+_SELECTED_OBJ_RE = re.compile(
+    r'^\[Selected object: id=(?P<obj_id>[^,\]]+),\s*type=(?P<obj_type>[^,\]]+)'
+    r'(?:,\s*text="(?P<obj_text>[^"]*)")?\]\s*(?P<rest>.+)$',
+    re.DOTALL,
+)
+
+_STICKY_RE = re.compile(
+    r'^(?:create|add|make|put)\s+(?:a\s+)?'
+    r'(?:(?P<color>yellow|blue|green|red|purple|orange|pink|white)\s+)?'
+    r'sticky\s*(?:note\s*)?'
+    r'(?:saying|with\s+text|that\s+says|titled|:)?\s*'
+    r'["\']?(?P<text>.+?)["\']?$',
+    re.IGNORECASE,
+)
+
+_FIT_VIEW_RE = re.compile(
+    r'^(?:fit\s+(?:view|to\s+screen|everything)|zoom\s+to\s+fit|show\s+all|see\s+everything)$',
+    re.IGNORECASE,
+)
+
+_DELETE_RE = re.compile(
+    r'^(?:delete|remove)\s+(?:this|it|that|the\s+\w+)\s*$',
+    re.IGNORECASE,
+)
+
+_RECOLOR_RE = re.compile(
+    r'^(?:make\s+(?:it|this)|change\s+(?:it\s+)?(?:to|into)|set\s+(?:it\s+)?(?:color\s+)?to)\s+'
+    r'(?P<color>yellow|blue|green|red|purple|orange|pink|white)\s*$',
+    re.IGNORECASE,
+)
+
+
+def try_deterministic_route(
+    command: str,
+    board_state: list[dict],
+    board_id: str,
+    trace_id: str,
+) -> dict | None:
+    """Handle simple commands deterministically without invoking the LLM.
+
+    Returns a result dict (same shape as run_agent) if matched, or None to
+    fall through to the full agent.
+    """
+    cmd = command.strip()
+
+    # Extract selected object context if present
+    selected_id = ""
+    selected_type = ""
+    m_sel = _SELECTED_OBJ_RE.match(cmd)
+    if m_sel:
+        selected_id = m_sel.group("obj_id")
+        selected_type = m_sel.group("obj_type")
+        cmd = m_sel.group("rest").strip()
+
+    # ── Fit view ──
+    if _FIT_VIEW_RE.match(cmd):
+        return {
+            "message": "Zooming to fit everything on screen.",
+            "actions": [],
+            "actions_performed": ["fit_view"],
+            "trace_id": trace_id,
+            "fit_to_view": True,
+        }
+
+    # ── Create a sticky note ──
+    m = _STICKY_RE.match(cmd)
+    if m:
+        text = (m.group("text") or "").strip().strip("'\"")
+        if text:
+            color_kw = (m.group("color") or "").lower()
+            color_hex = _COLOR_MAP.get(color_kw, "#FEF08A")
+
+            x, y = find_open_position(board_state, needed_width=200, needed_height=140)
+
+            text_len = len(text)
+            if text_len <= 30:
+                w, h, fs = 160, 100, 16
+            elif text_len <= 80:
+                w, h, fs = 200, 140, 15
+            elif text_len <= 150:
+                w, h, fs = 220, 180, 14
+            else:
+                w, h, fs = 250, 220, 13
+
+            temp_id = f"sticky-{uuid.uuid4().hex[:8]}"
+            action = {
+                "action": "create",
+                "object_type": "sticky",
+                "temp_id": temp_id,
+                "props": {
+                    "text": text, "x": int(x), "y": int(y),
+                    "width": w, "height": h, "color": color_hex,
+                    "font_size": fs, "rotation": 0,
+                },
+            }
+            preview = text[:40] + ("..." if len(text) > 40 else "")
+            return {
+                "message": f'Done! Created a sticky note: "{preview}"',
+                "actions": [action],
+                "actions_performed": ["create_sticky_note: sticky"],
+                "trace_id": trace_id,
+                "fit_to_view": False,
+            }
+
+    # ── Delete selected object ──
+    if selected_id and _DELETE_RE.match(cmd):
+        return {
+            "message": "Done! Deleted the object.",
+            "actions": [{
+                "action": "delete",
+                "object_type": selected_type or "sticky",
+                "object_id": selected_id,
+                "props": {},
+            }],
+            "actions_performed": ["delete_object"],
+            "trace_id": trace_id,
+            "fit_to_view": False,
+        }
+
+    # ── Recolor selected object ──
+    if selected_id:
+        m = _RECOLOR_RE.match(cmd)
+        if m:
+            color_kw = m.group("color").lower()
+            color_hex = _COLOR_MAP.get(color_kw, "#FEF08A")
+            return {
+                "message": f"Done! Changed the color to {color_kw}.",
+                "actions": [{
+                    "action": "update",
+                    "object_type": selected_type or "sticky",
+                    "object_id": selected_id,
+                    "props": {"color": color_hex, "fill": color_hex},
+                }],
+                "actions_performed": ["update_object"],
+                "trace_id": trace_id,
+                "fit_to_view": False,
+            }
+
+    return None
+
 
 def _create_llm(spec: ModelSpec) -> BaseChatModel:
     """Create the appropriate LangChain chat model for the given spec."""
@@ -99,22 +286,27 @@ def _create_llm(spec: ModelSpec) -> BaseChatModel:
         raise ValueError(f"Unknown provider: {spec.provider}")
 
 
-# Per-model agent cache
-_agent_cache: dict[str, object] = {}
+# Per (model, tool_set) agent cache
+_agent_cache: dict[tuple[str, str], object] = {}
 
 
-def get_agent(model_id: str = DEFAULT_MODEL_ID):
-    """Get or create a cached agent for the given model."""
-    if model_id not in _agent_cache:
+def get_agent(model_id: str = DEFAULT_MODEL_ID, tool_set_key: str = "all"):
+    """Get or create a cached agent for the given model and tool set."""
+    cache_key = (model_id, tool_set_key)
+    if cache_key not in _agent_cache:
         spec = get_model_spec(model_id)
         llm = _create_llm(spec)
-        _agent_cache[model_id] = create_react_agent(
+        tools = TOOL_SETS.get(tool_set_key, ALL_TOOLS)
+        _agent_cache[cache_key] = create_react_agent(
             llm,
-            ALL_TOOLS,
+            tools,
             prompt=SYSTEM_PROMPT,
         )
-        logger.info("Created agent for model: %s (%s)", model_id, spec.provider)
-    return _agent_cache[model_id]
+        logger.info(
+            "Created agent for model=%s tool_set=%s (%d tools)",
+            model_id, tool_set_key, len(tools),
+        )
+    return _agent_cache[cache_key]
 
 
 MAX_OBJECTS_IN_CONTEXT = 50
@@ -256,18 +448,43 @@ def run_agent(
     Returns:
         dict with 'message', 'actions', 'actions_performed', 'trace_id'
     """
-    spec = get_model_spec(model_id)
-    agent = get_agent(model_id)
     trace_id = str(uuid.uuid4())
 
     # Set board state so layout-aware tools can access it
     set_board_state(board_state)
 
+    # ── Optimization 2: Try deterministic route first (zero LLM calls) ──
+    deterministic_result = try_deterministic_route(command, board_state, board_id, trace_id)
+    if deterministic_result is not None:
+        logger.info("Deterministic route matched for command: %s", command[:60])
+        cost_tracker.record(
+            model="deterministic",
+            input_tokens=0,
+            output_tokens=0,
+            trace_id=trace_id,
+            operation="deterministic_route",
+        )
+        return deterministic_result
+
+    # ── Full agent path ──
+    spec = get_model_spec(model_id)
+    tool_set_key = _classify_tool_set(command)
+    agent = get_agent(model_id, tool_set_key)
+
     # Build context with full object details so the agent can identify objects for edits
     board_context = _build_board_context(board_state)
+
+    # Optimization 1: Pre-compute layout so agent doesn't need to call get_board_layout first
+    board_layout = describe_board_layout(board_state)
+
     project_ctx = _build_project_context(project_context)
 
-    user_message = f"Board ID: {board_id}\n{board_context}{project_ctx}\n\nCommand: {command}"
+    user_message = (
+        f"Board ID: {board_id}\n{board_context}\n\n"
+        f"BOARD LAYOUT:\n{board_layout}"
+        f"{project_ctx}\n\n"
+        f"Command: {command}"
+    )
 
     # Collect callbacks for dual tracing
     callbacks = []
@@ -275,7 +492,10 @@ def run_agent(
     if langfuse_handler:
         callbacks.append(langfuse_handler)
 
-    config = {"callbacks": callbacks} if callbacks else {}
+    # Optimization 3: Cap ReAct iterations using the config setting
+    config: dict = {"recursion_limit": settings.max_agent_iterations}
+    if callbacks:
+        config["callbacks"] = callbacks
 
     try:
         result = agent.invoke(

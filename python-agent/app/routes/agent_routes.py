@@ -45,6 +45,7 @@ async def handle_command(request: AgentCommandRequest):
         actions=result["actions"],
         actions_performed=result["actions_performed"],
         trace_id=result["trace_id"],
+        fit_to_view=result.get("fit_to_view", False),
     )
 
 
