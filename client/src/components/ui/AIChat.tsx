@@ -45,8 +45,8 @@ function getSpeechRecognition(): SpeechRecognitionInstance | null {
 }
 
 export default function AIChat({ boardId, socketRef }: Props) {
-  const { addObject, updateObject, removeObject } = useBoardStore()
-  const { triggerFit } = useUIStore()
+  const { objects, addObject, updateObject, removeObject } = useBoardStore()
+  const { selectedIds, triggerFit } = useUIStore()
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', text: 'Hi! Tell me what to create on the board. Try: "Create a SWOT analysis" or "Add 3 yellow sticky notes"' }
   ])
@@ -144,7 +144,17 @@ export default function AIChat({ boardId, socketRef }: Props) {
       const token = getToken()
       const endpoint = `${SERVER_URL}/api/agent/command`
 
-      const body: any = { boardId, command, model: selectedModel }
+      // If user has an object selected, include its details so they can say "describe this" etc.
+      let contextCommand = command
+      if (selectedIds.length === 1) {
+        const sel = objects.get(selectedIds[0])
+        if (sel) {
+          const text = (sel as any).text || (sel as any).title || ''
+          contextCommand = `[Selected object: id=${sel.id}, type=${sel.type}${text ? `, text="${text}"` : ''}] ${command}`
+        }
+      }
+
+      const body: any = { boardId, command: contextCommand, model: selectedModel }
 
       const { data } = await axios.post(
         endpoint,
@@ -371,10 +381,20 @@ export default function AIChat({ boardId, socketRef }: Props) {
 
       {/* Input area */}
       <div className="p-3 border-t border-gray-700 flex flex-col gap-2">
+        {selectedIds.length === 1 && (() => {
+          const sel = objects.get(selectedIds[0])
+          if (!sel || sel.type === 'connector') return null
+          const text = (sel as any).text || (sel as any).title || ''
+          return (
+            <div className="text-[10px] text-indigo-300 bg-indigo-900/30 px-2 py-1 rounded">
+              Selected: {sel.type}{text ? ` — "${text.length > 30 ? text.slice(0, 30) + '...' : text}"` : ''}
+            </div>
+          )
+        })()}
         <div className="flex gap-2">
           <input
             className="flex-1 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 outline-none border border-gray-600 focus:border-indigo-500"
-            placeholder={isRecording ? 'Listening...' : 'Tell AI what to do...'}
+            placeholder={isRecording ? 'Listening...' : selectedIds.length === 1 ? 'Ask about selected object...' : 'Tell AI what to do...'}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && sendCommand()}
