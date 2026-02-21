@@ -145,6 +145,9 @@ async def handle_dashboard_query(request: DashboardQueryRequest):
     board_lines = []
     for b in request.boards:
         parts = [f'"{b.get("title", "Untitled")}" (id={b["id"]})']
+        ws_name = b.get("workspace_name")
+        if ws_name:
+            parts.append(f"workspace: {ws_name}")
         obj_count = b.get("object_count", 0)
         obj_types = b.get("object_types", "")
         if obj_count:

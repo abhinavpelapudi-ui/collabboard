@@ -237,7 +237,8 @@ agent.post('/dashboard', requireAuth, async (c) => {
 
   // Fetch all boards accessible to this user with object summaries
   const { rows: boardSummaries } = await pool.query(
-    `SELECT DISTINCT b.id, b.title,
+    `SELECT DISTINCT ON (b.id) b.id, b.title,
+       w.name AS workspace_name,
        (SELECT COUNT(*)::int FROM objects o WHERE o.board_id = b.id) AS object_count,
        (SELECT string_agg(DISTINCT o.type, ', ') FROM objects o WHERE o.board_id = b.id) AS object_types,
        (SELECT string_agg(sub.txt, ' | ')
@@ -251,8 +252,10 @@ agent.post('/dashboard', requireAuth, async (c) => {
        ) AS content_preview
      FROM boards b
      LEFT JOIN board_members bm ON bm.board_id = b.id AND bm.user_id = $1
-     WHERE b.owner_id = $1 OR bm.user_id = $1
-     ORDER BY b.created_at DESC`,
+     LEFT JOIN workspace_members wm ON wm.workspace_id = b.workspace_id AND wm.user_id = $1
+     LEFT JOIN workspaces w ON w.id = b.workspace_id
+     WHERE b.owner_id = $1 OR bm.user_id = $1 OR wm.user_id = $1
+     ORDER BY b.id, b.created_at DESC`,
     [userId]
   )
 
