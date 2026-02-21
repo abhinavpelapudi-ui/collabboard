@@ -1,6 +1,8 @@
 services:
   python-agent:
-    build: ./python-agent
+    build:
+      context: .
+      dockerfile: python-agent/Dockerfile
     ports:
       - "8000:8000"
     environment:
