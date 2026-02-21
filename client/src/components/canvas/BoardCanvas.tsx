@@ -53,6 +53,23 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
     if (activeTool !== 'connect') setPendingConnectorSource(null)
   }, [activeTool])
 
+  // Dynamic canvas size: expand to fit all objects (including negative coords)
+  let minObjX = 0, minObjY = 0
+  let maxObjX = 0, maxObjY = 0
+  for (const obj of objects.values()) {
+    if (obj.type === 'connector') continue
+    minObjX = Math.min(minObjX, obj.x)
+    minObjY = Math.min(minObjY, obj.y)
+    maxObjX = Math.max(maxObjX, obj.x + obj.width)
+    maxObjY = Math.max(maxObjY, obj.y + obj.height)
+  }
+  // Offset to shift negative-coordinate objects into visible space
+  const offsetX = minObjX < 0 ? Math.abs(minObjX) + CANVAS_PADDING : 0
+  const offsetY = minObjY < 0 ? Math.abs(minObjY) + CANVAS_PADDING : 0
+
+  const canvasWidth = Math.max(MIN_CANVAS_WIDTH, maxObjX + offsetX + CANVAS_PADDING)
+  const canvasHeight = Math.max(MIN_CANVAS_HEIGHT, maxObjY + offsetY + CANVAS_PADDING)
+
   // Fit-to-view: scroll the container to center all objects
   useEffect(() => {
     if (!fitRequest || !containerRef.current) return
@@ -75,16 +92,17 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
       maxY = Math.max(maxY, obj.y + obj.height)
     }
 
-    // Scroll to center the content bounding box in the viewport
-    const centerX = (minX + maxX) / 2
-    const centerY = (minY + maxY) / 2
+    // Scroll to center the content bounding box in the viewport (account for layer offset)
+    const centerX = (minX + maxX) / 2 + offsetX
+    const centerY = (minY + maxY) / 2 + offsetY
     container.scrollLeft = centerX - container.clientWidth / 2
     container.scrollTop = centerY - container.clientHeight / 2
-  }, [fitRequest, objects])
+  }, [fitRequest, objects, offsetX, offsetY])
 
-  // Get pointer position on the canvas (no transform needed — scale is always 1)
+  // Get pointer position in world coordinates (subtract layer offset)
   function getWorldPos(stage: Konva.Stage) {
-    return stage.getPointerPosition()!
+    const pos = stage.getPointerPosition()!
+    return { x: pos.x - offsetX, y: pos.y - offsetY }
   }
 
   // Cursor sync
@@ -95,8 +113,9 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
     lastCursorRef.current = now
     const stage = stageRef.current
     if (!stage) return
-    const pos = stage.getPointerPosition()
-    if (!pos) return
+    const rawPos = stage.getPointerPosition()
+    if (!rawPos) return
+    const pos = { x: rawPos.x - offsetX, y: rawPos.y - offsetY }
     socketRef.current?.emit('cursor:move', { boardId, x: pos.x, y: pos.y })
 
     // Update drag selection box
@@ -107,7 +126,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
       const h = Math.abs(pos.y - dragStartWorld.current.y)
       if (w > 4 || h > 4) setSelectionBox({ x, y, w, h })
     }
-  }, [boardId, socketRef])
+  }, [boardId, socketRef, offsetX, offsetY])
 
   // Start drag-select on mousedown on empty canvas
   const onMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -262,15 +281,6 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
 
   const objectList = Array.from(objects.values()).sort((a, b) => a.z_index - b.z_index)
 
-  // Dynamic canvas size: expand to fit all objects with padding
-  let canvasWidth = MIN_CANVAS_WIDTH
-  let canvasHeight = MIN_CANVAS_HEIGHT
-  for (const obj of objects.values()) {
-    if (obj.type === 'connector') continue
-    canvasWidth = Math.max(canvasWidth, obj.x + obj.width + CANVAS_PADDING)
-    canvasHeight = Math.max(canvasHeight, obj.y + obj.height + CANVAS_PADDING)
-  }
-
   const cursorStyle = ['sticky', 'rect', 'circle', 'frame', 'text', 'connect'].includes(activeTool)
     ? 'crosshair'
     : 'default'
@@ -279,7 +289,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
     <div
       ref={containerRef}
       className="flex-1 overflow-auto"
-      style={{ background: '#0a0a1a' }}
+      style={{ background: '#0a0a1a', overscrollBehavior: 'contain' }}
     >
       {activeTool === 'connect' && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-gray-900 border border-indigo-500 rounded-xl px-4 py-2 text-sm text-indigo-300 shadow-lg pointer-events-none">
@@ -305,10 +315,10 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
         onClick={onStageClick}
         style={{ cursor: cursorStyle }}
       >
-        <Layer>
+        <Layer offsetX={-offsetX} offsetY={-offsetY}>
           {/* Canvas background */}
           <KonvaRect
-            x={0} y={0}
+            x={-offsetX} y={-offsetY}
             width={canvasWidth} height={canvasHeight}
             fill="#111827"
             listening={false}
@@ -369,7 +379,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
           )}
         </Layer>
 
-        <Layer listening={false}>
+        <Layer listening={false} offsetX={-offsetX} offsetY={-offsetY}>
           <CursorsLayer />
         </Layer>
       </Stage>
