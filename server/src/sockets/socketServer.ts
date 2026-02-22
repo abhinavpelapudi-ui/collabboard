@@ -10,8 +10,9 @@ let io: Server | null = null
 // userId → Set<socketId>  (user may have multiple tabs open)
 const userSockets = new Map<string, Set<string>>()
 
-// socketId → Map<boardId, role>
-const roleCache = new Map<string, Map<string, string>>()
+// socketId → Map<boardId, { role, cachedAt }>  — entries expire after 5 min
+const ROLE_CACHE_TTL_MS = 5 * 60 * 1000
+const roleCache = new Map<string, Map<string, { role: string; cachedAt: number }>>()
 
 export function setIO(instance: Server) {
   io = instance
@@ -29,12 +30,18 @@ export function unregisterUserSocket(userId: string, socketId: string) {
 }
 
 export function getCachedRole(socketId: string, boardId: string): string | undefined {
-  return roleCache.get(socketId)?.get(boardId)
+  const entry = roleCache.get(socketId)?.get(boardId)
+  if (!entry) return undefined
+  if (Date.now() - entry.cachedAt > ROLE_CACHE_TTL_MS) {
+    roleCache.get(socketId)!.delete(boardId)
+    return undefined
+  }
+  return entry.role
 }
 
 export function setCachedRole(socketId: string, boardId: string, role: string) {
   if (!roleCache.has(socketId)) roleCache.set(socketId, new Map())
-  roleCache.get(socketId)!.set(boardId, role)
+  roleCache.get(socketId)!.set(boardId, { role, cachedAt: Date.now() })
 }
 
 /**
@@ -67,7 +74,7 @@ export function notifyRoleChanged(userId: string, boardId: string, newRole: stri
   for (const socketId of sockets) {
     // Keep cache consistent with new role
     if (roleCache.has(socketId)) {
-      roleCache.get(socketId)!.set(boardId, newRole)
+      roleCache.get(socketId)!.set(boardId, { role: newRole, cachedAt: Date.now() })
     }
     // Push event to this socket
     io.to(socketId).emit('role:changed', { boardId, role: newRole })

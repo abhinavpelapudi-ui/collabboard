@@ -116,9 +116,9 @@ io.use((socket, next) => {
 })
 
 io.on('connection', (socket) => {
-  console.log(`🔌 Connected: ${(socket as any).userName}`)
+  console.log(`🔌 Connected: ${(socket as any).userId}`)
   registerSocketHandlers(io, socket as any)
-  socket.on('disconnect', () => console.log(`🔌 Disconnected: ${(socket as any).userName}`))
+  socket.on('disconnect', () => console.log(`🔌 Disconnected: ${(socket as any).userId}`))
 })
 
 async function shutdown() {
