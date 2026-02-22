@@ -41,9 +41,9 @@ agent.post('/command', requireAuth, async (c) => {
   const { boardId, command, model } = schema.parse(body)
   const userId = c.get('userId')
 
-  // Board access check
+  // Board access check — editors and owners only (viewers cannot modify via AI)
   const role = await getUserRole(boardId, userId)
-  if (!role) return c.json({ error: 'Access denied' }, 403)
+  if (!role || role === 'viewer') return c.json({ error: 'Access denied' }, 403)
 
   // Rate limit
   const lastReq = lastRequestTime.get(userId) || 0
@@ -225,7 +225,7 @@ agent.post('/feedback', requireAuth, async (c) => {
   const { boardId, traceId, rating, comment, command, response, model } = schema.parse(body)
   const userId = c.get('userId')
 
-  // Board access check
+  // Board access check — any board member can submit feedback
   const role = await getUserRole(boardId, userId)
   if (!role) return c.json({ error: 'Access denied' }, 403)
 
@@ -249,9 +249,9 @@ agent.post('/upload', requireAuth, async (c) => {
     return c.json({ error: 'Missing file or boardId' }, 400)
   }
 
-  // Board access check
+  // Board access check — editors and owners only
   const role = await getUserRole(boardId, userId)
-  if (!role) return c.json({ error: 'Access denied' }, 403)
+  if (!role || role === 'viewer') return c.json({ error: 'Access denied' }, 403)
 
   // Forward to Python agent
   const agentFormData = new FormData()

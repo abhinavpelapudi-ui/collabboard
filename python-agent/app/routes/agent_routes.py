@@ -33,14 +33,20 @@ async def handle_command(request: AgentCommandRequest):
     if not request.command.strip():
         raise HTTPException(status_code=400, detail="Command cannot be empty")
 
-    result = await asyncio.to_thread(
-        run_agent,
-        command=request.command,
-        board_state=request.board_state,
-        board_id=request.board_id,
-        model_id=request.model or DEFAULT_MODEL_ID,
-        project_context=request.project_context,
-    )
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                run_agent,
+                command=request.command,
+                board_state=request.board_state,
+                board_id=request.board_id,
+                model_id=request.model or DEFAULT_MODEL_ID,
+                project_context=request.project_context,
+            ),
+            timeout=120,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Agent request timed out")
 
     return AgentCommandResponse(
         success=True,
@@ -176,10 +182,16 @@ async def handle_dashboard_query(request: DashboardQueryRequest):
     llm = _create_llm(spec)
 
     from langchain_core.messages import SystemMessage, HumanMessage
-    result = await asyncio.to_thread(
-        llm.invoke,
-        [SystemMessage(content=prompt), HumanMessage(content=request.command)],
-    )
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                llm.invoke,
+                [SystemMessage(content=prompt), HumanMessage(content=request.command)],
+            ),
+            timeout=60,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Dashboard query timed out")
 
     # Parse JSON from LLM response
     import json

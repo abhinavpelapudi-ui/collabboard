@@ -19,7 +19,9 @@ export function requireBoardAccess(minRole: 'viewer' | 'editor' | 'owner' = 'vie
          SELECT pm.role FROM project_members pm JOIN boards b ON b.project_id = pm.project_id WHERE b.id = $1 AND pm.user_id = $2
          UNION ALL
          SELECT wm.role FROM workspace_members wm JOIN boards b ON b.workspace_id = wm.workspace_id WHERE b.id = $1 AND wm.user_id = $2
-       ) roles LIMIT 1`,
+       ) roles
+       ORDER BY CASE role WHEN 'owner' THEN 2 WHEN 'editor' THEN 1 WHEN 'viewer' THEN 0 ELSE -1 END DESC
+       LIMIT 1`,
       [boardId, userId]
     )
 

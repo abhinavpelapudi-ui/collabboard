@@ -1,3 +1,5 @@
+import sys
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,3 +21,8 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Reject startup if agent_shared_secret is empty — prevents auth bypass
+if not settings.agent_shared_secret:
+    print("FATAL: AGENT_SHARED_SECRET environment variable must be set", file=sys.stderr)
+    sys.exit(1)

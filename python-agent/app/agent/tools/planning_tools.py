@@ -27,6 +27,8 @@ def generate_flow_diagram(
         start_x: X coordinate for placement
         start_y: Y coordinate for placement
     """
+    steps = steps[:50]
+
     actions = []
     node_w, node_h = 220, 130
     gap = 70
@@ -133,6 +135,8 @@ def generate_team_graph(
         start_x: X coordinate for placement
         start_y: Y coordinate for placement
     """
+    members = members[:50]
+
     actions = []
     member_w, member_h = 160, 80
     task_w, task_h = 180, 70

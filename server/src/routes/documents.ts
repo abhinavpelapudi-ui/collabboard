@@ -58,7 +58,12 @@ documents.patch('/boards/:boardId/docs/:docId', requireAuth, requireBoardAccess(
 
   const rawBody = await c.req.text()
   if (rawBody.length > 2_000_000) return c.json({ error: 'Content too large (max 2MB)' }, 413)
-  const body = JSON.parse(rawBody)
+  let body: unknown
+  try {
+    body = JSON.parse(rawBody)
+  } catch {
+    return c.json({ error: 'Invalid JSON' }, 400)
+  }
   const schema = z.object({
     title: z.string().min(1).max(200).optional(),
     content: z.record(z.unknown()).optional(),

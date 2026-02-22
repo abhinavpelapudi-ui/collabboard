@@ -214,7 +214,7 @@ const tools: Anthropic.Tool[] = [
   },
 ]
 
-ai.post('/command', requireAuth, requireBoardAccess('viewer'), async (c) => {
+ai.post('/command', requireAuth, requireBoardAccess('editor'), async (c) => {
   const body = await c.req.json()
   const schema = z.object({
     boardId: z.string().uuid(),

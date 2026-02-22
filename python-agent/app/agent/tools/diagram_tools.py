@@ -25,6 +25,9 @@ def generate_sequence_diagram(
         start_x: X coordinate for placement
         start_y: Y coordinate for placement
     """
+    participants = participants[:20]
+    messages = messages[:100]
+
     actions = []
     actor_w, actor_h = 140, 50
     actor_gap = 60
@@ -189,6 +192,9 @@ def generate_system_diagram(
         start_x: X coordinate for placement
         start_y: Y coordinate for placement
     """
+    components = components[:50]
+    connections = connections[:100]
+
     actions = []
     comp_w, comp_h = 180, 100
     gap_x, gap_y = 80, 80
@@ -302,6 +308,8 @@ def generate_gantt_chart(
         start_x: X coordinate for placement
         start_y: Y coordinate for placement
     """
+    tasks = tasks[:200]
+
     actions = []
     n = len(tasks)
     chart_w = 800

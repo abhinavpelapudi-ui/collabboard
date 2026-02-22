@@ -251,31 +251,35 @@ auth.post('/activate-license', async (c) => {
 
   const { key } = parsed
 
-  const { rows: keyRows } = await pool.query(
-    `SELECT plan, max_activations, activations FROM license_keys WHERE key = $1`,
-    [key]
-  )
-  if (!keyRows[0]) return c.json({ error: 'Invalid license key' }, 404)
-  if (keyRows[0].activations >= keyRows[0].max_activations) {
-    return c.json({ error: 'This license key has already been fully used' }, 409)
-  }
-
-  const newPlan = keyRows[0].plan
-
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
+    // SELECT ... FOR UPDATE to prevent TOCTOU race on concurrent activations
+    const { rows: keyRows } = await client.query(
+      `SELECT plan, max_activations, activations FROM license_keys WHERE key = $1 FOR UPDATE`,
+      [key]
+    )
+    if (!keyRows[0]) {
+      await client.query('ROLLBACK')
+      return c.json({ error: 'Invalid license key' }, 404)
+    }
+    if (keyRows[0].activations >= keyRows[0].max_activations) {
+      await client.query('ROLLBACK')
+      return c.json({ error: 'This license key has already been fully used' }, 409)
+    }
+
+    const newPlan = keyRows[0].plan
     await client.query(`UPDATE license_keys SET activations = activations + 1 WHERE key = $1`, [key])
     await client.query(`UPDATE users SET plan = $1 WHERE id = $2`, [newPlan, userId])
     await client.query('COMMIT')
+
+    return c.json({ plan: newPlan })
   } catch (err) {
     await client.query('ROLLBACK')
     throw err
   } finally {
     client.release()
   }
-
-  return c.json({ plan: newPlan })
 })
 
 export default auth

@@ -31,6 +31,9 @@ def generate_sprint_board(
     if column_names is None:
         column_names = ["Backlog", "To Do", "In Progress", "Review", "Done"]
 
+    tasks = tasks[:100]
+    column_names = column_names[:10]
+
     actions = []
     col_width = 220
     col_padding = 20
