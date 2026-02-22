@@ -1,3 +1,4 @@
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -31,7 +32,7 @@ class CostRecord:
 
 @dataclass
 class CostTracker:
-    records: list[CostRecord] = field(default_factory=list)
+    records: deque = field(default_factory=lambda: deque(maxlen=10000))
 
     def record(
         self,

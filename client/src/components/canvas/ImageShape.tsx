@@ -28,6 +28,7 @@ function ImageShape({ object, boardId, socketRef, isSelected }: Props) {
   }, [object.src])
 
   function onDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
+    pushUndo()
     const props = { x: e.target.x(), y: e.target.y() }
     updateObject(object.id, props)
     socketRef.current?.emit('object:update', { boardId, objectId: object.id, props })

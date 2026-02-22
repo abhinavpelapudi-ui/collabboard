@@ -1,13 +1,9 @@
 """Diagram generation tools: sequence diagrams, system architecture, project tracking."""
 
-import uuid
 from langchain_core.tools import tool
 
 from app.services.chart_service import render_chart, render_gantt
-
-
-def _new_temp_id(prefix: str = "obj") -> str:
-    return f"{prefix}-{uuid.uuid4().hex[:8]}"
+from app.agent.tools.utils import new_temp_id
 
 
 @tool
@@ -43,7 +39,7 @@ def generate_sequence_diagram(
     actions.append({
         "action": "create",
         "object_type": "frame",
-        "temp_id": _new_temp_id("seq"),
+        "temp_id": new_temp_id("seq"),
         "props": {
             "title": title,
             "x": start_x,
@@ -64,7 +60,7 @@ def generate_sequence_diagram(
         ax = start_x + padding + i * (actor_w + actor_gap)
         ay = start_y + 60
         actor_positions[name] = ax + actor_w // 2
-        aid = _new_temp_id("actor")
+        aid = new_temp_id("actor")
         actor_ids[name] = aid
 
         actions.append({
@@ -92,7 +88,7 @@ def generate_sequence_diagram(
         actions.append({
             "action": "create",
             "object_type": "rect",
-            "temp_id": _new_temp_id("life"),
+            "temp_id": new_temp_id("life"),
             "props": {
                 "x": cx - 1,
                 "y": lifeline_top,
@@ -124,7 +120,7 @@ def generate_sequence_diagram(
         actions.append({
             "action": "create",
             "object_type": "text",
-            "temp_id": _new_temp_id("mlbl"),
+            "temp_id": new_temp_id("mlbl"),
             "props": {
                 "text": label,
                 "x": label_x,
@@ -138,8 +134,8 @@ def generate_sequence_diagram(
         })
 
         # Small invisible rects at arrow endpoints for connector
-        from_id = _new_temp_id("mpt")
-        to_id = _new_temp_id("mpt")
+        from_id = new_temp_id("mpt")
+        to_id = new_temp_id("mpt")
         actions.append({
             "action": "create",
             "object_type": "rect",
@@ -161,7 +157,7 @@ def generate_sequence_diagram(
         actions.append({
             "action": "create",
             "object_type": "connector",
-            "temp_id": _new_temp_id("marr"),
+            "temp_id": new_temp_id("marr"),
             "props": {
                 "from_temp_id": from_id,
                 "to_temp_id": to_id,
@@ -222,7 +218,7 @@ def generate_system_diagram(
     actions.append({
         "action": "create",
         "object_type": "frame",
-        "temp_id": _new_temp_id("sys"),
+        "temp_id": new_temp_id("sys"),
         "props": {
             "title": title,
             "x": start_x,
@@ -236,7 +232,7 @@ def generate_system_diagram(
 
     comp_ids = []
     for i, comp in enumerate(components):
-        cid = _new_temp_id("comp")
+        cid = new_temp_id("comp")
         comp_ids.append(cid)
 
         col = i % cols
@@ -276,7 +272,7 @@ def generate_system_diagram(
             actions.append({
                 "action": "create",
                 "object_type": "connector",
-                "temp_id": _new_temp_id("conn"),
+                "temp_id": new_temp_id("conn"),
                 "props": {
                     "from_temp_id": comp_ids[fi],
                     "to_temp_id": comp_ids[ti],
@@ -319,7 +315,7 @@ def generate_gantt_chart(
     actions.append({
         "action": "create",
         "object_type": "frame",
-        "temp_id": _new_temp_id("gantt"),
+        "temp_id": new_temp_id("gantt"),
         "props": {
             "title": title,
             "x": start_x,
@@ -343,7 +339,7 @@ def generate_gantt_chart(
     actions.append({
         "action": "create",
         "object_type": "text",
-        "temp_id": _new_temp_id("gsum"),
+        "temp_id": new_temp_id("gsum"),
         "props": {
             "text": f"{done_pct}% Complete  |  {counts['done']}/{total} done  |  {counts['in_progress']} in progress  |  {counts['todo']} to do",
             "x": start_x + padding,
@@ -366,7 +362,7 @@ def generate_gantt_chart(
     actions.append({
         "action": "create",
         "object_type": "image",
-        "temp_id": _new_temp_id("gchart"),
+        "temp_id": new_temp_id("gchart"),
         "props": {
             "src": gantt_url,
             "alt": f"Gantt chart: {title}",

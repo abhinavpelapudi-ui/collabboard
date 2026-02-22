@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
-import { getToken } from '../../hooks/useAuth'
 import { BoardDocument } from '@collabboard/shared'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+import { api } from '../../lib/api'
 
 interface Props {
   boardId: string
@@ -16,19 +13,16 @@ export default function DocumentsPanel({ boardId, onClose, onOpenDoc }: Props) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    axios.get(`${SERVER_URL}/api/boards/${boardId}/docs`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
-    }).then(({ data }) => setDocs(data.documents || []))
+    api.get(`/api/boards/${boardId}/docs`).then(({ data }) => setDocs(data.documents || []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [boardId])
 
   async function createDoc() {
     try {
-      const { data } = await axios.post(
-        `${SERVER_URL}/api/boards/${boardId}/docs`,
-        { title: 'Untitled' },
-        { headers: { Authorization: `Bearer ${getToken()}` } }
+      const { data } = await api.post(
+        `/api/boards/${boardId}/docs`,
+        { title: 'Untitled' }
       )
       const doc = data.document
       setDocs(prev => [doc, ...prev])
@@ -38,9 +32,7 @@ export default function DocumentsPanel({ boardId, onClose, onOpenDoc }: Props) {
 
   async function deleteDoc(docId: string) {
     try {
-      await axios.delete(`${SERVER_URL}/api/boards/${boardId}/docs/${docId}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
+      await api.delete(`/api/boards/${boardId}/docs/${docId}`)
       setDocs(prev => prev.filter(d => d.id !== docId))
     } catch {}
   }

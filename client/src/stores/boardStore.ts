@@ -4,6 +4,7 @@ import { BoardObject } from '@collabboard/shared'
 interface BoardStore {
   objects: Map<string, BoardObject>
   undoStack: BoardObject[][]   // snapshots for undo
+  clipboard: BoardObject[]     // copied objects
 
   setObjects: (objects: BoardObject[]) => void
   clearObjects: () => void
@@ -12,11 +13,14 @@ interface BoardStore {
   removeObject: (objectId: string) => void
   pushUndo: () => void
   undo: () => void
+  copySelected: (selectedIds: string[]) => void
+  pasteClipboard: (offsetX?: number, offsetY?: number) => string[]
 }
 
 export const useBoardStore = create<BoardStore>((set, get) => ({
   objects: new Map(),
   undoStack: [],
+  clipboard: [],
 
   setObjects: (objects) => {
     const map = new Map<string, BoardObject>()
@@ -69,5 +73,34 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
       objects: map,
       undoStack: state.undoStack.slice(0, -1),
     }))
+  },
+
+  copySelected: (selectedIds) => {
+    const { objects } = get()
+    const copied = selectedIds
+      .map(id => objects.get(id))
+      .filter((o): o is BoardObject => !!o && o.type !== 'connector')
+    set({ clipboard: copied })
+  },
+
+  pasteClipboard: (offsetX = 20, offsetY = 20) => {
+    const { clipboard, objects } = get()
+    if (clipboard.length === 0) return []
+    const newIds: string[] = []
+    const next = new Map(objects)
+    for (const obj of clipboard) {
+      const newId = crypto.randomUUID()
+      const copy = {
+        ...obj,
+        id: newId,
+        x: obj.x + offsetX,
+        y: obj.y + offsetY,
+        updated_at: new Date().toISOString(),
+      }
+      next.set(newId, copy as BoardObject)
+      newIds.push(newId)
+    }
+    set({ objects: next })
+    return newIds
   },
 }))

@@ -1,12 +1,13 @@
 import { Hono } from 'hono'
+import { ZodError } from 'zod'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
 import { Server } from 'socket.io'
 import { createAdapter } from '@socket.io/redis-adapter'
-import dotenv from 'dotenv'
+import { config } from './config'
 import { redis } from './redis'
-import { testConnection, runMigrations } from './db'
+import { testConnection, runMigrations, pool } from './db'
 import { rateLimit } from './middleware/rateLimit'
 import { trackRequest } from './middleware/requestStats'
 import boardsRouter from './routes/boards'
@@ -25,16 +26,22 @@ import { registerSocketHandlers } from './sockets/handlers'
 import { setIO } from './sockets/socketServer'
 import { decodeSocketToken } from './middleware/auth'
 
-dotenv.config()
-
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'
-const PORT = Number(process.env.PORT) || 3001
-
 const app = new Hono()
+
+app.onError((err, c) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    return c.json({ error: 'Invalid JSON in request body' }, 400)
+  }
+  if (err instanceof ZodError) {
+    return c.json({ error: err.errors[0]?.message ?? 'Validation error' }, 400)
+  }
+  console.error('Unhandled error:', err)
+  return c.json({ error: 'Internal server error' }, 500)
+})
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use('*', logger())
-app.use('*', cors({ origin: CLIENT_URL, credentials: true }))
+app.use('*', cors({ origin: config.CLIENT_URL, credentials: true }))
 app.use('*', trackRequest)
 // Global rate limit: 200 req/min per IP; tighter 30/min on auth routes
 app.use('/api/*', rateLimit(200, 60_000))
@@ -56,15 +63,15 @@ app.route('/api', commentsRouter)
 app.route('/api', documentsRouter)
 
 // ─── Start HTTP server ────────────────────────────────────────────────────────
-const server = serve({ fetch: app.fetch, port: PORT }, async () => {
+const server = serve({ fetch: app.fetch, port: config.PORT }, async () => {
   await testConnection()
   await runMigrations()
-  console.log(`🚀 Hono server running on port ${PORT}`)
+  console.log(`🚀 Hono server running on port ${config.PORT}`)
 })
 
 // ─── Socket.IO (attached to the same HTTP server) ────────────────────────────
 const io = new Server(server as any, {
-  cors: { origin: CLIENT_URL, credentials: true },
+  cors: { origin: config.CLIENT_URL, credentials: true },
   pingTimeout: 60_000,
 })
 setIO(io)
@@ -94,3 +101,13 @@ io.on('connection', (socket) => {
   registerSocketHandlers(io, socket as any)
   socket.on('disconnect', () => console.log(`🔌 Disconnected: ${(socket as any).userName}`))
 })
+
+async function shutdown() {
+  console.log('Graceful shutdown initiated...')
+  io.close()
+  if (redis) await redis.quit()
+  await pool.end()
+  process.exit(0)
+}
+process.on('SIGTERM', shutdown)
+process.on('SIGINT', shutdown)

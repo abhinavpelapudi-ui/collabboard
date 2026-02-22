@@ -13,6 +13,7 @@ interface Props {
 function SelectionTransformer({ selectedIds, boardId, socketRef }: Props) {
   const transformerRef = useRef<Konva.Transformer>(null)
   const updateObject = useBoardStore(s => s.updateObject)
+  const pushUndo = useBoardStore(s => s.pushUndo)
 
   useEffect(() => {
     if (!transformerRef.current) return
@@ -26,6 +27,7 @@ function SelectionTransformer({ selectedIds, boardId, socketRef }: Props) {
   }, [selectedIds])
 
   function onTransformEnd() {
+    pushUndo()
     const nodes = transformerRef.current?.nodes() ?? []
     nodes.forEach(node => {
       const id = node.id()

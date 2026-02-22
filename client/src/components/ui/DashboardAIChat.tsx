@@ -1,14 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
-import axios from 'axios'
-import { getToken } from '../../hooks/useAuth'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+import { api } from '../../lib/api'
 
 interface Props {
   onNavigate: (boardId: string) => void
 }
 
 interface Message {
+  id: string
   role: 'user' | 'assistant'
   text: string
   boardId?: string
@@ -18,7 +16,7 @@ interface Message {
 export default function DashboardAIChat({ onNavigate }: Props) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: 'Hi! Ask me to find a board — e.g. "Where is my SWOT analysis?" or "Take me to the project board"' },
+    { id: crypto.randomUUID(), role: 'assistant', text: 'Hi! Ask me to find a board — e.g. "Where is my SWOT analysis?" or "Take me to the project board"' },
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -32,17 +30,17 @@ export default function DashboardAIChat({ onNavigate }: Props) {
     if (!input.trim() || loading) return
     const command = input.trim()
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', text: command }])
+    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', text: command }])
     setLoading(true)
 
     try {
-      const { data } = await axios.post(
-        `${SERVER_URL}/api/agent/dashboard`,
-        { command },
-        { headers: { Authorization: `Bearer ${getToken()}` } }
+      const { data } = await api.post(
+        '/api/agent/dashboard',
+        { command }
       )
 
       const msg: Message = {
+        id: crypto.randomUUID(),
         role: 'assistant',
         text: data.message,
         boardId: data.boardId || undefined,
@@ -57,7 +55,7 @@ export default function DashboardAIChat({ onNavigate }: Props) {
     } catch (err: any) {
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', text: err?.response?.data?.error || 'Something went wrong. Try again.' },
+        { id: crypto.randomUUID(), role: 'assistant', text: err?.response?.data?.error || 'Something went wrong. Try again.' },
       ])
     } finally {
       setLoading(false)
@@ -91,8 +89,8 @@ export default function DashboardAIChat({ onNavigate }: Props) {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px]">
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`max-w-[85%] px-3 py-2 rounded-xl text-xs leading-relaxed ${
                 msg.role === 'user'

@@ -20,6 +20,16 @@ function setCache(key: string, result: any) {
   responseCache.set(key, { result, expiresAt: Date.now() + 10 * 60 * 1000 })
 }
 
+// ─── Bounded cache cleanup ────────────────────────────────────────────────────
+const MAX_CACHE_SIZE = 500
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, entry] of responseCache) {
+    if (now > entry.expiresAt) responseCache.delete(key)
+  }
+  if (responseCache.size > MAX_CACHE_SIZE) responseCache.clear()
+}, 60_000)
+
 // ─── Per-user rate limit (1 request per 3 seconds) ───────────────────────────
 const lastRequestTime = new Map<string, number>()
 
@@ -243,7 +253,7 @@ ai.post('/command', requireAuth, async (c) => {
   }
 
   // ── Response cache: same command within 10 min ────────────────────────────
-  const cacheKey = `${command.toLowerCase().trim()}`
+  const cacheKey = `${boardId}:${command.toLowerCase().trim()}`
   const cached = getCached(cacheKey)
   if (cached) {
     // Re-create objects with fresh IDs so they don't collide

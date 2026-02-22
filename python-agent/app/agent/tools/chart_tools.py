@@ -1,13 +1,9 @@
 """Chart and dashboard generation tools."""
 
-import uuid
 from langchain_core.tools import tool
 
 from app.services.chart_service import render_chart
-
-
-def _new_temp_id(prefix: str = "obj") -> str:
-    return f"{prefix}-{uuid.uuid4().hex[:8]}"
+from app.agent.tools.utils import new_temp_id
 
 
 @tool
@@ -49,7 +45,7 @@ def generate_chart(
     return {
         "action": "create",
         "object_type": "image",
-        "temp_id": _new_temp_id("chart"),
+        "temp_id": new_temp_id("chart"),
         "props": {
             "src": data_url,
             "alt": f"{chart_type} chart: {title}",
@@ -84,7 +80,7 @@ def create_dashboard(
         start_y: Y coordinate for the top-left corner (use find_free_space to determine)
     """
     actions = []
-    frame_id = _new_temp_id("dashboard")
+    frame_id = new_temp_id("dashboard")
 
     num_charts = len(charts)
     cols = 2
@@ -128,7 +124,7 @@ def create_dashboard(
         actions.append({
             "action": "create",
             "object_type": "image",
-            "temp_id": _new_temp_id("chart"),
+            "temp_id": new_temp_id("chart"),
             "props": {
                 "src": data_url,
                 "alt": chart.get("title", f"Chart {i + 1}"),

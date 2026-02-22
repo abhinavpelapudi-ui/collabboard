@@ -6,6 +6,7 @@ import { CircleObject } from '@collabboard/shared'
 import { useBoardStore } from '../../stores/boardStore'
 import { useUIStore } from '../../stores/uiStore'
 import { openTextEditor } from './useTextEdit'
+import { useStageRef } from './StageContext'
 
 interface Props {
   object: CircleObject
@@ -18,8 +19,10 @@ function CircleShape({ object, boardId, socketRef, isSelected }: Props) {
   const updateObject = useBoardStore(s => s.updateObject)
   const pushUndo = useBoardStore(s => s.pushUndo)
   const setSelectedObjectId = useUIStore(s => s.setSelectedObjectId)
+  const stageRef = useStageRef()
 
   function onDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
+    pushUndo()
     const props = { x: e.target.x(), y: e.target.y() }
     updateObject(object.id, props)
     socketRef.current?.emit('object:update', { boardId, objectId: object.id, props })
@@ -29,6 +32,7 @@ function CircleShape({ object, boardId, socketRef, isSelected }: Props) {
     // Use inscribed square for the textarea (roughly 70% of diameter)
     const inset = object.width * 0.15
     openTextEditor({
+      stageRef,
       x: object.x + inset,
       y: object.y + inset,
       width: object.width - inset * 2,

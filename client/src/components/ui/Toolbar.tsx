@@ -2,14 +2,14 @@ import { useEffect } from 'react'
 import { useUIStore, Tool } from '../../stores/uiStore'
 import { STICKY_COLORS } from '@collabboard/shared'
 
-const tools: { key: Tool; label: string; shortcut: string; icon: string }[] = [
-  { key: 'select',  label: 'Select',  shortcut: 'V', icon: '↖' },
-  { key: 'sticky',  label: 'Sticky',  shortcut: 'S', icon: '📝' },
-  { key: 'text',    label: 'Text',    shortcut: 'T', icon: 'T' },
-  { key: 'rect',    label: 'Rect',    shortcut: 'R', icon: '⬜' },
-  { key: 'circle',  label: 'Circle',  shortcut: 'C', icon: '⬤' },
-  { key: 'frame',   label: 'Frame',   shortcut: 'F', icon: '▢' },
-  { key: 'connect', label: 'Connect', shortcut: 'X', icon: '↗' },
+const tools: { key: Tool; label: string; shortcut: string; icon: string; ariaLabel: string }[] = [
+  { key: 'select',  label: 'Select',  shortcut: 'V', icon: '↖', ariaLabel: 'Select tool' },
+  { key: 'sticky',  label: 'Sticky',  shortcut: 'S', icon: '📝', ariaLabel: 'Sticky note tool' },
+  { key: 'text',    label: 'Text',    shortcut: 'T', icon: 'T', ariaLabel: 'Text tool' },
+  { key: 'rect',    label: 'Rect',    shortcut: 'R', icon: '⬜', ariaLabel: 'Rectangle tool' },
+  { key: 'circle',  label: 'Circle',  shortcut: 'C', icon: '⬤', ariaLabel: 'Circle tool' },
+  { key: 'frame',   label: 'Frame',   shortcut: 'F', icon: '▢', ariaLabel: 'Frame tool' },
+  { key: 'connect', label: 'Connect', shortcut: 'X', icon: '↗', ariaLabel: 'Connector tool' },
 ]
 
 export default function Toolbar() {
@@ -20,6 +20,7 @@ export default function Toolbar() {
     function onKeyDown(e: KeyboardEvent) {
       const focused = document.activeElement
       if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) return
+      if ((focused as HTMLElement)?.isContentEditable) return
       if (e.key === 'v' || e.key === 'V') setActiveTool('select')
       if (e.key === 's' || e.key === 'S') setActiveTool('sticky')
       if (e.key === 'r' || e.key === 'R') setActiveTool('rect')
@@ -40,6 +41,7 @@ export default function Toolbar() {
         <button
           key={tool.key}
           onClick={() => setActiveTool(tool.key)}
+          aria-label={tool.ariaLabel}
           title={`${tool.label} (${tool.shortcut})`}
           className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
             activeTool === tool.key
@@ -60,6 +62,8 @@ export default function Toolbar() {
           <button
             key={color}
             onClick={() => setActiveColor(color)}
+            aria-label={`Color ${color}`}
+            title={`Color ${color}`}
             className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
               activeColor === color ? 'border-indigo-400 scale-110' : 'border-transparent'
             }`}
@@ -74,6 +78,7 @@ export default function Toolbar() {
       {/* AI Toggle */}
       <button
         onClick={toggleAIPanel}
+        aria-label="AI agent panel"
         title="AI Agent (A)"
         className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
           showAIPanel ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 hover:bg-surface-overlay'

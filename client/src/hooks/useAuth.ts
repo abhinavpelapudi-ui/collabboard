@@ -9,6 +9,7 @@ export interface AuthUser {
   name: string
   email: string
   plan?: string
+  avatarUrl?: string
 }
 
 export function getToken(): string | null {
@@ -37,5 +38,17 @@ export function clearAuth() {
 }
 
 export function isLoggedIn(): boolean {
-  return !!getToken() && !!getUser()
+  const token = getToken()
+  if (!token || !getUser()) return false
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    if (typeof payload.exp === 'number' && payload.exp * 1000 < Date.now()) {
+      clearAuth()
+      return false
+    }
+    return true
+  } catch {
+    clearAuth()
+    return false
+  }
 }

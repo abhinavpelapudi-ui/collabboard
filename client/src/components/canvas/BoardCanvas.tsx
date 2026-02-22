@@ -5,6 +5,7 @@ import Konva from 'konva'
 import type { Socket } from 'socket.io-client'
 import { useBoardStore } from '../../stores/boardStore'
 import { useUIStore } from '../../stores/uiStore'
+import { StageContext } from './StageContext'
 import {
   StickyObject, RectObject, CircleObject, FrameObject,
   ConnectorObject, TextObject, ImageObject,
@@ -286,6 +287,7 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
     : 'default'
 
   return (
+    <StageContext.Provider value={stageRef}>
     <div
       ref={containerRef}
       className="flex-1 overflow-auto"
@@ -384,5 +386,6 @@ export default function BoardCanvas({ boardId, socketRef }: Props) {
         </Layer>
       </Stage>
     </div>
+    </StageContext.Provider>
   )
 }

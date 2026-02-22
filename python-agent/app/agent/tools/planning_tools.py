@@ -1,11 +1,8 @@
 """Plan, workflow, and team visualization tools."""
 
-import uuid
 from langchain_core.tools import tool
 
-
-def _new_temp_id(prefix: str = "obj") -> str:
-    return f"{prefix}-{uuid.uuid4().hex[:8]}"
+from app.agent.tools.utils import new_temp_id
 
 
 @tool
@@ -46,7 +43,7 @@ def generate_flow_diagram(
     actions.append({
         "action": "create",
         "object_type": "frame",
-        "temp_id": _new_temp_id("flow"),
+        "temp_id": new_temp_id("flow"),
         "props": {
             "title": title,
             "x": start_x,
@@ -62,7 +59,7 @@ def generate_flow_diagram(
     node_ids = []
 
     for i, step in enumerate(steps):
-        nid = _new_temp_id("node")
+        nid = new_temp_id("node")
         node_ids.append(nid)
 
         name = step if isinstance(step, str) else step.get("name", f"Step {i + 1}")
@@ -104,7 +101,7 @@ def generate_flow_diagram(
                 actions.append({
                     "action": "create",
                     "object_type": "connector",
-                    "temp_id": _new_temp_id("conn"),
+                    "temp_id": new_temp_id("conn"),
                     "props": {
                         "from_temp_id": node_ids[i],
                         "to_temp_id": node_ids[target_idx],
@@ -159,7 +156,7 @@ def generate_team_graph(
     actions.append({
         "action": "create",
         "object_type": "frame",
-        "temp_id": _new_temp_id("team"),
+        "temp_id": new_temp_id("team"),
         "props": {
             "title": title,
             "x": start_x,
@@ -186,7 +183,7 @@ def generate_team_graph(
         tasks = member.get("tasks", [])
 
         # Person node
-        person_id = _new_temp_id("person")
+        person_id = new_temp_id("person")
         person_text = f"{name}\n({role})" if role else name
         actions.append({
             "action": "create",
@@ -209,7 +206,7 @@ def generate_team_graph(
         for ti, task in enumerate(tasks):
             task_name = task.get("name", f"Task {ti + 1}")
             task_status = task.get("status", "todo")
-            task_id = _new_temp_id("task")
+            task_id = new_temp_id("task")
 
             actions.append({
                 "action": "create",
@@ -231,7 +228,7 @@ def generate_team_graph(
             actions.append({
                 "action": "create",
                 "object_type": "connector",
-                "temp_id": _new_temp_id("ptc"),
+                "temp_id": new_temp_id("ptc"),
                 "props": {
                     "from_temp_id": person_id,
                     "to_temp_id": task_id,

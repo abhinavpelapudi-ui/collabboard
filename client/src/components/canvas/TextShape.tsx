@@ -5,6 +5,7 @@ import type { Socket } from 'socket.io-client'
 import { TextObject } from '@collabboard/shared'
 import { useBoardStore } from '../../stores/boardStore'
 import { useUIStore } from '../../stores/uiStore'
+import { useStageRef } from './StageContext'
 
 interface Props {
   object: TextObject
@@ -19,6 +20,7 @@ function TextShape({ object, boardId, socketRef, isSelected }: Props) {
   const setSelectedObjectId = useUIStore(s => s.setSelectedObjectId)
   const activeTool = useUIStore(s => s.activeTool)
   const toggleSelectedId = useUIStore(s => s.toggleSelectedId)
+  const stageRef = useStageRef()
 
   function handleClick(e: Konva.KonvaEventObject<MouseEvent>) {
     if (activeTool !== 'select') return
@@ -31,13 +33,19 @@ function TextShape({ object, boardId, socketRef, isSelected }: Props) {
   }
 
   function handleDblClick() {
-    const stage = Konva.stages[0]
+    const stage = stageRef.current
     if (!stage) return
     const stageRect = stage.container().getBoundingClientRect()
     const scale = stage.scaleX()
     const stagePos = stage.position()
-    const left = stageRect.left + stagePos.x + object.x * scale
-    const top = stageRect.top + stagePos.y + object.y * scale
+
+    // Account for Layer offsetX/offsetY (used to shift content for negative coords)
+    const layer = stage.getLayers()[0]
+    const layerOffsetX = layer ? -layer.offsetX() : 0
+    const layerOffsetY = layer ? -layer.offsetY() : 0
+
+    const left = stageRect.left + stagePos.x + (object.x + layerOffsetX) * scale
+    const top = stageRect.top + stagePos.y + (object.y + layerOffsetY) * scale
 
     const textarea = document.createElement('textarea')
     Object.assign(textarea.style, {
@@ -55,9 +63,17 @@ function TextShape({ object, boardId, socketRef, isSelected }: Props) {
     textarea.focus()
     textarea.select()
 
+    let finished = false
+
     function finish() {
-      if (!document.body.contains(textarea)) return
-      document.body.removeChild(textarea)
+      if (finished) return
+      finished = true
+      textarea.removeEventListener('input', handleInput)
+      textarea.removeEventListener('blur', handleBlur)
+      textarea.removeEventListener('keydown', handleKeyDown)
+      if (document.body.contains(textarea)) {
+        document.body.removeChild(textarea)
+      }
       const newText = textarea.value
       if (newText !== object.text) {
         pushUndo()
@@ -66,13 +82,18 @@ function TextShape({ object, boardId, socketRef, isSelected }: Props) {
         socketRef.current?.emit('object:update', { boardId, objectId: object.id, props })
       }
     }
-    textarea.addEventListener('input', () => {
+
+    function handleInput() {
       const text = textarea.value
       updateObject(object.id, { text })
       socketRef.current?.emit('object:update', { boardId, objectId: object.id, props: { text } })
-    })
-    textarea.addEventListener('blur', finish)
-    textarea.addEventListener('keydown', (e) => { if (e.key === 'Escape') finish() })
+    }
+    function handleBlur() { finish() }
+    function handleKeyDown(e: KeyboardEvent) { if (e.key === 'Escape') finish() }
+
+    textarea.addEventListener('input', handleInput)
+    textarea.addEventListener('blur', handleBlur)
+    textarea.addEventListener('keydown', handleKeyDown)
   }
 
   function handleDragEnd(e: Konva.KonvaEventObject<DragEvent>) {

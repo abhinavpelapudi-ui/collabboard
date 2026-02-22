@@ -1,12 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import axios from 'axios'
-import { getToken } from '../../hooks/useAuth'
 import type { Socket } from 'socket.io-client'
+import { api } from '../../lib/api'
 import { useBoardStore } from '../../stores/boardStore'
 import { useUIStore } from '../../stores/uiStore'
 import { BoardObject } from '@collabboard/shared'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
 
 interface Props {
   boardId: string
@@ -14,6 +11,7 @@ interface Props {
 }
 
 interface Message {
+  id: string
   role: 'user' | 'assistant'
   text: string
   traceId?: string
@@ -48,7 +46,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
   const { objects, addObject, updateObject, removeObject } = useBoardStore()
   const { selectedIds, triggerFit } = useUIStore()
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: 'Hi! Tell me what to create on the board. Try: "Create a SWOT analysis" or "Add 3 yellow sticky notes"' }
+    { id: crypto.randomUUID(), role: 'assistant', text: 'Hi! Tell me what to create on the board. Try: "Create a SWOT analysis" or "Add 3 yellow sticky notes"' }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -72,7 +70,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
 
   // Fetch available models on mount
   useEffect(() => {
-    axios.get(`${SERVER_URL}/api/agent/models`)
+    api.get('/api/agent/models')
       .then(({ data }) => {
         setAvailableModels(data.models || [])
         if (data.default) setSelectedModel(data.default)
@@ -114,9 +112,8 @@ export default function AIChat({ boardId, socketRef }: Props) {
     setFeedback(prev => ({ ...prev, [msg.traceId!]: rating }))
     setShowCommentFor(null)
     try {
-      const token = getToken()
-      await axios.post(
-        `${SERVER_URL}/api/agent/feedback`,
+      await api.post(
+        '/api/agent/feedback',
         {
           boardId,
           traceId: msg.traceId,
@@ -125,8 +122,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
           command: msg.command || '',
           response: msg.text,
           model: msg.model || '',
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       )
     } catch {
       // Non-critical — silently fail
@@ -137,33 +133,27 @@ export default function AIChat({ boardId, socketRef }: Props) {
     if (!input.trim() || loading) return
     const command = input.trim()
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', text: command }])
+    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', text: command }])
     setLoading(true)
 
     try {
-      const token = getToken()
-      const endpoint = `${SERVER_URL}/api/agent/command`
-
       // If user has an object selected, include its details so they can say "describe this" etc.
       let contextCommand = command
       if (selectedIds.length === 1) {
         const sel = objects.get(selectedIds[0])
         if (sel) {
-          const text = (sel as any).text || (sel as any).title || ''
+          const text = 'text' in sel ? sel.text : 'title' in sel ? sel.title : ''
           contextCommand = `[Selected object: id=${sel.id}, type=${sel.type}${text ? `, text="${text}"` : ''}] ${command}`
         }
       }
 
-      const body: any = { boardId, command: contextCommand, model: selectedModel }
+      const body: Record<string, string> = { boardId, command: contextCommand, model: selectedModel }
 
-      const { data } = await axios.post(
-        endpoint,
-        body,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      const { data } = await api.post('/api/agent/command', body)
 
       applyActions(data)
       setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
         role: 'assistant',
         text: data.message || 'Done!',
         traceId: data.traceId || undefined,
@@ -172,7 +162,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
       }])
     } catch (err: any) {
       const errMsg = err?.response?.data?.error || 'Something went wrong. Try again.'
-      setMessages(prev => [...prev, { role: 'assistant', text: errMsg }])
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: errMsg }])
     } finally {
       setLoading(false)
     }
@@ -187,38 +177,38 @@ export default function AIChat({ boardId, socketRef }: Props) {
     const allowed = ['.pdf', '.docx', '.txt', '.doc']
     const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
     if (!allowed.includes(ext)) {
-      setMessages(prev => [...prev, { role: 'assistant', text: `Unsupported file type. Please upload PDF, DOCX, or TXT files.` }])
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: `Unsupported file type. Please upload PDF, DOCX, or TXT files.` }])
       return
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setMessages(prev => [...prev, { role: 'assistant', text: 'File too large. Maximum size is 10MB.' }])
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: 'File too large. Maximum size is 10MB.' }])
       return
     }
 
-    setMessages(prev => [...prev, { role: 'user', text: `Uploading: ${file.name}` }])
+    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', text: `Uploading: ${file.name}` }])
     setLoading(true)
 
     try {
-      const token = getToken()
       const formData = new FormData()
       formData.append('file', file)
       formData.append('boardId', boardId)
 
-      const { data } = await axios.post(
-        `${SERVER_URL}/api/agent/upload`,
+      const { data } = await api.post(
+        '/api/agent/upload',
         formData,
-        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+        { headers: { 'Content-Type': 'multipart/form-data' } }
       )
 
       setUploadedFile(file.name)
       setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
         role: 'assistant',
         text: `Uploaded "${file.name}" (${data.metadata?.page_count || data.metadata?.word_count || '?'} pages/words). You can now ask me to create a sprint board, summarize it, or extract action items from it.`
       }])
     } catch (err: any) {
       const errMsg = err?.response?.data?.error || 'Failed to upload file.'
-      setMessages(prev => [...prev, { role: 'assistant', text: errMsg }])
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: errMsg }])
     } finally {
       setLoading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -236,7 +226,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
 
     const recognition = getSpeechRecognition()
     if (!recognition) {
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Voice input is not supported in this browser. Try Chrome.' }])
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: 'Voice input is not supported in this browser. Try Chrome.' }])
       return
     }
 
@@ -305,8 +295,8 @@ export default function AIChat({ boardId, socketRef }: Props) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 max-h-72">
-        {messages.map((msg, i) => (
-          <div key={i} className={`max-w-[90%] ${msg.role === 'user' ? 'ml-auto' : ''}`}>
+        {messages.map((msg) => (
+          <div key={msg.id} className={`max-w-[90%] ${msg.role === 'user' ? 'ml-auto' : ''}`}>
             <div
               className={`text-sm rounded-xl px-3 py-2 ${
                 msg.role === 'user'
@@ -384,7 +374,7 @@ export default function AIChat({ boardId, socketRef }: Props) {
         {selectedIds.length === 1 && (() => {
           const sel = objects.get(selectedIds[0])
           if (!sel || sel.type === 'connector') return null
-          const text = (sel as any).text || (sel as any).title || ''
+          const text = 'text' in sel ? sel.text : 'title' in sel ? sel.title : ''
           return (
             <div className="text-[10px] text-indigo-600 bg-indigo-100 px-2 py-1 rounded">
               Selected: {sel.type}{text ? ` — "${text.length > 30 ? text.slice(0, 30) + '...' : text}"` : ''}

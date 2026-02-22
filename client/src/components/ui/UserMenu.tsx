@@ -43,7 +43,7 @@ export default function UserMenu({ user }: Props) {
 
   const plan = user.plan ?? 'free'
   const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1)
-  const avatarUrl = (user as any).avatarUrl as string | undefined
+  const avatarUrl = user.avatarUrl
 
   return (
     <div className="relative" ref={ref}>

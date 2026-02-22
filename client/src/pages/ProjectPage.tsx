@@ -1,14 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import { Board, Project, ProjectMember } from '@collabboard/shared'
-import { getToken, getUser } from '../hooks/useAuth'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-
-function authHeaders() {
-  return { Authorization: `Bearer ${getToken()}` }
-}
+import { getUser } from '../hooks/useAuth'
+import { api } from '../lib/api'
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   active: { bg: 'bg-green-500/10 border-green-500/20', text: 'text-green-600' },
@@ -70,10 +64,10 @@ export default function ProjectPage() {
   useEffect(() => {
     if (!projectId) return
     Promise.all([
-      axios.get(`${SERVER_URL}/api/projects/${projectId}`, { headers: authHeaders() }),
-      axios.get(`${SERVER_URL}/api/boards`, { headers: authHeaders() }),
-      axios.get(`${SERVER_URL}/api/projects/${projectId}/members`, { headers: authHeaders() }),
-      axios.get(`${SERVER_URL}/api/projects/${projectId}/stats`, { headers: authHeaders() }),
+      api.get(`/api/projects/${projectId}`),
+      api.get('/api/boards'),
+      api.get(`/api/projects/${projectId}/members`),
+      api.get(`/api/projects/${projectId}/stats`),
     ]).then(([projRes, boardsRes, membersRes, statsRes]) => {
       setProject(projRes.data)
       setBoards(boardsRes.data.filter((b: Board) => b.project_id === projectId))
@@ -88,17 +82,16 @@ export default function ProjectPage() {
 
   async function updateProject(updates: Record<string, unknown>) {
     if (!projectId) return
-    const { data } = await axios.patch(`${SERVER_URL}/api/projects/${projectId}`, updates, { headers: authHeaders() })
+    const { data } = await api.patch(`/api/projects/${projectId}`, updates)
     setProject(prev => prev ? { ...prev, ...data } : prev)
   }
 
   async function createBoard() {
     if (!projectId || !project) return
     try {
-      const { data } = await axios.post(
-        `${SERVER_URL}/api/boards`,
-        { title: 'Untitled Board', workspaceId: project.workspace_id, projectId },
-        { headers: authHeaders() }
+      const { data } = await api.post(
+        '/api/boards',
+        { title: 'Untitled Board', workspaceId: project.workspace_id, projectId }
       )
       navigate(`/board/${data.id}`)
     } catch (err: any) {
@@ -111,10 +104,9 @@ export default function ProjectPage() {
     if (!inviteEmail.trim() || !projectId) return
     setInviteError('')
     try {
-      const { data } = await axios.post(
-        `${SERVER_URL}/api/projects/${projectId}/members`,
-        { email: inviteEmail.trim(), role: inviteRole },
-        { headers: authHeaders() }
+      const { data } = await api.post(
+        `/api/projects/${projectId}/members`,
+        { email: inviteEmail.trim(), role: inviteRole }
       )
       setMembers(prev => [...prev, data])
       setInviteEmail('')
@@ -125,7 +117,7 @@ export default function ProjectPage() {
 
   async function removeMember(userId: string) {
     if (!projectId || !confirm('Remove this member?')) return
-    await axios.delete(`${SERVER_URL}/api/projects/${projectId}/members/${userId}`, { headers: authHeaders() })
+    await api.delete(`/api/projects/${projectId}/members/${userId}`)
     setMembers(prev => prev.filter(m => m.user_id !== userId))
   }
 

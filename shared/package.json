@@ -2,5 +2,8 @@
   "name": "@collabboard/shared",
   "version": "1.0.0",
   "main": "./src/types.ts",
-  "types": "./src/types.ts"
+  "types": "./src/types.ts",
+  "scripts": {
+    "build": "echo 'Shared types - no build step required'"
+  }
 }

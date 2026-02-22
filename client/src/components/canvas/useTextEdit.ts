@@ -10,6 +10,7 @@ interface Options {
   currentText: string
   onCommit: (text: string) => void
   onInput?: (text: string) => void  // called on every keystroke for real-time sync
+  stageRef?: React.RefObject<Konva.Stage | null>
 }
 
 /**
@@ -17,7 +18,7 @@ interface Options {
  * Works for sticky notes, rect shapes, circle shapes, and frame titles.
  */
 export function openTextEditor(opts: Options) {
-  const konvaStage = Konva.stages[0]
+  const konvaStage = opts.stageRef?.current ?? Konva.stages[0]
   if (!konvaStage) return
 
   const container = konvaStage.container()
@@ -25,8 +26,13 @@ export function openTextEditor(opts: Options) {
   const scale = konvaStage.scaleX()
   const stagePos = konvaStage.position()
 
-  const left = stageRect.left + stagePos.x + opts.x * scale
-  const top = stageRect.top + stagePos.y + opts.y * scale
+  // Account for Layer offsetX/offsetY (used to shift content for negative coords)
+  const layer = konvaStage.getLayers()[0]
+  const layerOffsetX = layer ? -layer.offsetX() : 0
+  const layerOffsetY = layer ? -layer.offsetY() : 0
+
+  const left = stageRect.left + stagePos.x + (opts.x + layerOffsetX) * scale
+  const top = stageRect.top + stagePos.y + (opts.y + layerOffsetY) * scale
 
   const textarea = document.createElement('textarea')
   Object.assign(textarea.style, {
@@ -54,17 +60,25 @@ export function openTextEditor(opts: Options) {
   textarea.focus()
   textarea.select()
 
+  let finished = false
+
   function finish() {
-    if (!document.body.contains(textarea)) return
-    document.body.removeChild(textarea)
+    if (finished) return
+    finished = true
+    textarea.removeEventListener('input', handleInput)
+    textarea.removeEventListener('blur', handleBlur)
+    textarea.removeEventListener('keydown', handleKeyDown)
+    if (document.body.contains(textarea)) {
+      document.body.removeChild(textarea)
+    }
     opts.onCommit(textarea.value)
   }
 
-  if (opts.onInput) {
-    textarea.addEventListener('input', () => opts.onInput!(textarea.value))
-  }
-  textarea.addEventListener('blur', finish)
-  textarea.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') finish()
-  })
+  function handleInput() { if (opts.onInput) opts.onInput(textarea.value) }
+  function handleBlur() { finish() }
+  function handleKeyDown(e: KeyboardEvent) { if (e.key === 'Escape') finish() }
+
+  textarea.addEventListener('input', handleInput)
+  textarea.addEventListener('blur', handleBlur)
+  textarea.addEventListener('keydown', handleKeyDown)
 }

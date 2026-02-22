@@ -1,11 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import axios from 'axios'
 import type { Socket } from 'socket.io-client'
-import { getToken } from '../../hooks/useAuth'
+import { api } from '../../lib/api'
 import { useBoardStore } from '../../stores/boardStore'
 import { BoardMember, ObjectComment } from '@collabboard/shared'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
 
 interface Props {
   boardId: string
@@ -26,7 +23,7 @@ export default function ObjectDetailPanel({ boardId, objectId, socketRef, onClos
 
   // Collect all tags used on the board for autocomplete
   const allTags = Array.from(
-    new Set(Array.from(objects.values()).flatMap(o => (o as any).tags || []))
+    new Set(Array.from(objects.values()).flatMap(o => o.tags ?? []))
   )
 
   useEffect(() => {
@@ -35,17 +32,13 @@ export default function ObjectDetailPanel({ boardId, objectId, socketRef, onClos
 
   // Fetch board members
   useEffect(() => {
-    axios.get(`${SERVER_URL}/api/boards/${boardId}/members`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
-    }).then(({ data }) => setMembers(data.members || data || []))
+    api.get(`/api/boards/${boardId}/members`).then(({ data }) => setMembers(data.members || data || []))
       .catch(() => {})
   }, [boardId])
 
   // Fetch comments
   useEffect(() => {
-    axios.get(`${SERVER_URL}/api/boards/${boardId}/objects/${objectId}/comments`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
-    }).then(({ data }) => setComments(data.comments || []))
+    api.get(`/api/boards/${boardId}/objects/${objectId}/comments`).then(({ data }) => setComments(data.comments || []))
       .catch(() => {})
   }, [boardId, objectId])
 

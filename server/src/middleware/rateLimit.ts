@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from 'hono'
 import { redis } from '../redis'
+import { config } from '../config'
 
 interface Window { count: number; resetAt: number }
 const store = new Map<string, Window>()
@@ -12,10 +13,10 @@ setInterval(() => {
 
 export function rateLimit(maxRequests: number, windowMs: number): MiddlewareHandler {
   return async (c, next) => {
-    const ip =
-      c.req.header('x-forwarded-for')?.split(',')[0].trim() ||
-      c.req.header('cf-connecting-ip') ||
-      'unknown'
+    const trustedProxies = config.TRUSTED_PROXIES?.split(',').map(s => s.trim()) || []
+    const forwardedFor = c.req.header('x-forwarded-for')?.split(',')[0].trim()
+    const directIp = c.req.header('cf-connecting-ip') || 'unknown'
+    const ip = (trustedProxies.length > 0 && forwardedFor) ? forwardedFor : directIp
 
     let count: number
 

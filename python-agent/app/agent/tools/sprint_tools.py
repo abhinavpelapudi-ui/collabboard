@@ -1,11 +1,8 @@
 """Sprint board and Kanban generation tools."""
 
-import uuid
 from langchain_core.tools import tool
 
-
-def _new_temp_id(prefix: str = "obj") -> str:
-    return f"{prefix}-{uuid.uuid4().hex[:8]}"
+from app.agent.tools.utils import new_temp_id
 
 
 @tool
@@ -46,7 +43,7 @@ def generate_sprint_board(
     total_height = header_h + max_tasks_per_col * (task_h + task_padding) + col_padding + 60
 
     # Sprint frame
-    frame_id = _new_temp_id("sprint")
+    frame_id = new_temp_id("sprint")
     actions.append({
         "action": "create",
         "object_type": "frame",
@@ -74,7 +71,7 @@ def generate_sprint_board(
         actions.append({
             "action": "create",
             "object_type": "rect",
-            "temp_id": _new_temp_id("col"),
+            "temp_id": new_temp_id("col"),
             "props": {
                 "x": col_x,
                 "y": col_y,
@@ -97,7 +94,7 @@ def generate_sprint_board(
         actions.append({
             "action": "create",
             "object_type": "sticky",
-            "temp_id": _new_temp_id("task"),
+            "temp_id": new_temp_id("task"),
             "props": {
                 "text": task_text,
                 "x": first_col_x,

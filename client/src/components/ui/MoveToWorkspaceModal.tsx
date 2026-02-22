@@ -1,9 +1,7 @@
 import { useRef, useState } from 'react'
-import axios from 'axios'
-import { getToken } from '../../hooks/useAuth'
 import { Workspace } from '@collabboard/shared'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+import { api } from '../../lib/api'
+import { useModalKeyboard } from '../../hooks/useModalKeyboard'
 
 interface Props {
   boardId: string
@@ -14,6 +12,7 @@ interface Props {
 }
 
 export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, workspaces, onClose, onMoved }: Props) {
+  useModalKeyboard(onClose)
   const [selected, setSelected] = useState<string | null>(currentWorkspaceId ?? null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -27,10 +26,9 @@ export default function MoveToWorkspaceModal({ boardId, currentWorkspaceId, work
     setSaving(true)
     setError('')
     try {
-      await axios.patch(
-        `${SERVER_URL}/api/boards/${boardId}`,
-        { workspaceId: selected },
-        { headers: { Authorization: `Bearer ${getToken()}` } }
+      await api.patch(
+        `/api/boards/${boardId}`,
+        { workspaceId: selected }
       )
       onMoved(selected)
       onClose()

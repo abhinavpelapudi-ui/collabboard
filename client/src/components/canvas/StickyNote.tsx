@@ -6,6 +6,7 @@ import { StickyObject } from '@collabboard/shared'
 import { useBoardStore } from '../../stores/boardStore'
 import { useUIStore } from '../../stores/uiStore'
 import { openTextEditor } from './useTextEdit'
+import { useStageRef } from './StageContext'
 
 interface Props {
   object: StickyObject
@@ -19,8 +20,10 @@ function StickyNote({ object, boardId, socketRef, isSelected }: Props) {
   const removeObject = useBoardStore(s => s.removeObject)
   const pushUndo = useBoardStore(s => s.pushUndo)
   const setSelectedObjectId = useUIStore(s => s.setSelectedObjectId)
+  const stageRef = useStageRef()
 
   function onDragEnd(e: Konva.KonvaEventObject<DragEvent>) {
+    pushUndo()
     const props = { x: e.target.x(), y: e.target.y() }
     updateObject(object.id, props)
     socketRef.current?.emit('object:update', { boardId, objectId: object.id, props })
@@ -28,6 +31,7 @@ function StickyNote({ object, boardId, socketRef, isSelected }: Props) {
 
   function onDblClick() {
     openTextEditor({
+      stageRef,
       x: object.x,
       y: object.y,
       width: object.width,

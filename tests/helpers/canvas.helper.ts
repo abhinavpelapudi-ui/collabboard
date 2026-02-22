@@ -49,5 +49,10 @@ export async function dragObject(page: Page, fromX: number, fromY: number, toX: 
 }
 
 export async function waitForCanvasPaint(page: Page, ms = 500): Promise<void> {
-  await page.waitForTimeout(ms)
+  await page.waitForSelector('canvas', { state: 'visible', timeout: 5000 }).catch(() => {})
+  await page.waitForTimeout(Math.min(ms, 300))
+}
+
+export function modKey(): string {
+  return process.platform === 'darwin' ? 'Meta' : 'Control'
 }

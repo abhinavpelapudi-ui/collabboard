@@ -1,13 +1,7 @@
 import { useState } from 'react'
-import axios from 'axios'
-import { getToken } from '../../hooks/useAuth'
 import { Project } from '@collabboard/shared'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-
-function authHeaders() {
-  return { Authorization: `Bearer ${getToken()}` }
-}
+import { api } from '../../lib/api'
+import { useModalKeyboard } from '../../hooks/useModalKeyboard'
 
 const INDUSTRIES = [
   '', 'Construction', 'Healthcare', 'Marketing', 'Engineering',
@@ -29,6 +23,7 @@ interface Props {
 }
 
 export default function ProjectModal({ workspaceId, project, onClose, onCreated, onUpdated }: Props) {
+  useModalKeyboard(onClose)
   const isEdit = !!project
   const [name, setName] = useState(project?.name || '')
   const [description, setDescription] = useState(project?.description || '')
@@ -47,17 +42,15 @@ export default function ProjectModal({ workspaceId, project, onClose, onCreated,
 
     try {
       if (isEdit && project) {
-        const { data } = await axios.patch(
-          `${SERVER_URL}/api/projects/${project.id}`,
-          { name: name.trim(), description, industry, color, startDate: startDate || null, endDate: endDate || null },
-          { headers: authHeaders() }
+        const { data } = await api.patch(
+          `/api/projects/${project.id}`,
+          { name: name.trim(), description, industry, color, startDate: startDate || null, endDate: endDate || null }
         )
         onUpdated?.(data)
       } else {
-        const { data } = await axios.post(
-          `${SERVER_URL}/api/projects`,
-          { name: name.trim(), workspaceId, description, industry, color, startDate: startDate || null, endDate: endDate || null },
-          { headers: authHeaders() }
+        const { data } = await api.post(
+          '/api/projects',
+          { name: name.trim(), workspaceId, description, industry, color, startDate: startDate || null, endDate: endDate || null }
         )
         onCreated?.(data)
       }

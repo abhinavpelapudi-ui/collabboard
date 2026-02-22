@@ -85,6 +85,13 @@ test.describe('Real-time Sync', () => {
 
       // User B canvas still renders (received the object:create socket event without crash)
       await expect(pB.locator('canvas').first()).toBeVisible()
+
+      // Wait for the object to appear via socket sync
+      await pB.waitForTimeout(2000)
+      const boardResponse = await pB.request.get(`http://localhost:3001/api/boards/${board.id}`, {
+        headers: { Authorization: `Bearer ${userB.token}` },
+      })
+      expect(boardResponse.ok()).toBeTruthy()
     } finally {
       await ctxA.close()
       await ctxB.close()

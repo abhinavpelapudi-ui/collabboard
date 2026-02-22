@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import axios from 'axios'
-import { getToken, getUser } from '../../hooks/useAuth'
+import { getUser } from '../../hooks/useAuth'
 import { WorkspaceMember } from '@collabboard/shared'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-
-function authHeaders() {
-  return { Authorization: `Bearer ${getToken()}` }
-}
+import { api } from '../../lib/api'
+import { useModalKeyboard } from '../../hooks/useModalKeyboard'
 
 interface Props {
   workspaceId: string
@@ -25,6 +20,7 @@ const roleColors: Record<string, string> = {
 }
 
 export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, onClose, onUpdated, onDeleted }: Props) {
+  useModalKeyboard(onClose)
   const user = getUser()
   const [tab, setTab] = useState<'general' | 'members'>('members')
   const [members, setMembers] = useState<WorkspaceMember[]>([])
@@ -45,7 +41,7 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
   async function fetchMembers() {
     setLoadingMembers(true)
     try {
-      const { data } = await axios.get(`${SERVER_URL}/api/workspaces/${workspaceId}/members`, { headers: authHeaders() })
+      const { data } = await api.get(`/api/workspaces/${workspaceId}/members`)
       setMembers(data)
     } finally {
       setLoadingMembers(false)
@@ -57,7 +53,7 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
     if (!name.trim() || name === workspaceName) return
     setSaving(true)
     try {
-      await axios.patch(`${SERVER_URL}/api/workspaces/${workspaceId}`, { name: name.trim() }, { headers: authHeaders() })
+      await api.patch(`/api/workspaces/${workspaceId}`, { name: name.trim() })
       onUpdated(name.trim())
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to rename')
@@ -71,10 +67,9 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
     setError('')
     setInviting(true)
     try {
-      const { data } = await axios.post(
-        `${SERVER_URL}/api/workspaces/${workspaceId}/members`,
-        { email: inviteEmail.trim(), role: inviteRole },
-        { headers: authHeaders() }
+      const { data } = await api.post(
+        `/api/workspaces/${workspaceId}/members`,
+        { email: inviteEmail.trim(), role: inviteRole }
       )
       setMembers(prev => {
         const without = prev.filter(m => m.user_id !== data.user_id)
@@ -90,10 +85,9 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
 
   async function changeRole(memberId: string, newRole: 'editor' | 'viewer') {
     try {
-      await axios.patch(
-        `${SERVER_URL}/api/workspaces/${workspaceId}/members/${memberId}`,
-        { role: newRole },
-        { headers: authHeaders() }
+      await api.patch(
+        `/api/workspaces/${workspaceId}/members/${memberId}`,
+        { role: newRole }
       )
       setMembers(prev => prev.map(m => m.user_id === memberId ? { ...m, role: newRole } : m))
     } catch (err: any) {
@@ -103,9 +97,8 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
 
   async function removeMember(memberId: string) {
     try {
-      await axios.delete(
-        `${SERVER_URL}/api/workspaces/${workspaceId}/members/${memberId}`,
-        { headers: authHeaders() }
+      await api.delete(
+        `/api/workspaces/${workspaceId}/members/${memberId}`
       )
       setMembers(prev => prev.filter(m => m.user_id !== memberId))
     } catch (err: any) {
@@ -115,7 +108,7 @@ export default function WorkspaceModal({ workspaceId, workspaceName, isOwner, on
 
   async function deleteWorkspace() {
     try {
-      await axios.delete(`${SERVER_URL}/api/workspaces/${workspaceId}`, { headers: authHeaders() })
+      await api.delete(`/api/workspaces/${workspaceId}`)
       onDeleted()
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to delete workspace')

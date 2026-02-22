@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Socket } from 'socket.io-client'
-import axios from 'axios'
-import { getToken, getUser } from '../../hooks/useAuth'
+import { getUser } from '../../hooks/useAuth'
+import { api } from '../../lib/api'
 import { usePresenceStore } from '../../stores/presenceStore'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
 
 interface ChatMessage {
   id: string
@@ -46,10 +44,8 @@ export default function BoardChat({ boardId, socket, onClose }: Props) {
 
   // Fetch history
   useEffect(() => {
-    axios
-      .get(`${SERVER_URL}/api/boards/${boardId}/chat`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
+    api
+      .get(`/api/boards/${boardId}/chat`)
       .then(({ data }) => {
         setMessages(
           data

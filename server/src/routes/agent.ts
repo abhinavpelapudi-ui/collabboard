@@ -3,13 +3,22 @@ import { requireAuth, AuthVariables } from '../middleware/auth'
 import { pool } from '../db'
 import { BoardObject } from '@collabboard/shared'
 import { z } from 'zod'
+import { config } from '../config'
 
 const agent = new Hono<{ Variables: AuthVariables }>()
 
-const PYTHON_AGENT_URL = process.env.PYTHON_AGENT_URL || 'http://localhost:8000'
-
 // ─── Per-user rate limit (1 request per 3 seconds) ───────────────────────────
 const lastRequestTime = new Map<string, number>()
+
+// ─── Bounded rate-limit map cleanup ──────────────────────────────────────────
+const MAX_RATE_LIMIT_SIZE = 500
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, ts] of lastRequestTime) {
+    if (now - ts > 60_000) lastRequestTime.delete(key)
+  }
+  if (lastRequestTime.size > MAX_RATE_LIMIT_SIZE) lastRequestTime.clear()
+}, 60_000)
 
 // ─── POST /command — Forward to Python agent, resolve temp IDs, persist ──────
 agent.post('/command', requireAuth, async (c) => {
@@ -85,9 +94,9 @@ agent.post('/command', requireAuth, async (c) => {
   // Forward to Python agent
   let agentResult: any
   try {
-    const resp = await fetch(`${PYTHON_AGENT_URL}/agent/command`, {
+    const resp = await fetch(`${config.PYTHON_AGENT_URL}/agent/command`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Agent-Secret': config.AGENT_SHARED_SECRET },
       body: JSON.stringify({
         command,
         board_id: boardId,
@@ -228,8 +237,9 @@ agent.post('/upload', requireAuth, async (c) => {
 
   let result: any
   try {
-    const resp = await fetch(`${PYTHON_AGENT_URL}/agent/upload`, {
+    const resp = await fetch(`${config.PYTHON_AGENT_URL}/agent/upload`, {
       method: 'POST',
+      headers: { 'X-Agent-Secret': config.AGENT_SHARED_SECRET },
       body: agentFormData,
     })
     if (!resp.ok) {
@@ -309,9 +319,9 @@ agent.post('/dashboard', requireAuth, async (c) => {
   // Forward to Python agent
   let agentResult: any
   try {
-    const resp = await fetch(`${PYTHON_AGENT_URL}/agent/dashboard`, {
+    const resp = await fetch(`${config.PYTHON_AGENT_URL}/agent/dashboard`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Agent-Secret': config.AGENT_SHARED_SECRET },
       body: JSON.stringify({
         command,
         boards: boardSummaries,
@@ -338,8 +348,15 @@ agent.post('/dashboard', requireAuth, async (c) => {
 
 // ─── GET /costs — Proxy cost data from Python agent (admin only) ─────────────
 agent.get('/costs', requireAuth, async (c) => {
+  const adminSecret = c.req.header('x-admin-secret')
+  if (adminSecret !== config.ADMIN_SECRET) {
+    return c.json({ error: 'Admin access required' }, 403)
+  }
+
   try {
-    const resp = await fetch(`${PYTHON_AGENT_URL}/agent/costs`)
+    const resp = await fetch(`${config.PYTHON_AGENT_URL}/agent/costs`, {
+      headers: { 'X-Agent-Secret': config.AGENT_SHARED_SECRET },
+    })
     if (!resp.ok) return c.json({ error: 'Failed to fetch costs' }, 502)
     const data = await resp.json()
     return c.json(data)
@@ -351,7 +368,9 @@ agent.get('/costs', requireAuth, async (c) => {
 // ─── GET /models — Available LLM models from Python agent ────────────────────
 agent.get('/models', async (c) => {
   try {
-    const resp = await fetch(`${PYTHON_AGENT_URL}/agent/models`)
+    const resp = await fetch(`${config.PYTHON_AGENT_URL}/agent/models`, {
+      headers: { 'X-Agent-Secret': config.AGENT_SHARED_SECRET },
+    })
     if (!resp.ok) return c.json({ error: 'Failed to fetch models' }, 502)
     const data = await resp.json()
     return c.json(data)

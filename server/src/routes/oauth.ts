@@ -1,27 +1,37 @@
 import { Hono } from 'hono'
 import jwt from 'jsonwebtoken'
+import crypto from 'node:crypto'
 import { pool } from '../db'
 import { v4 as uuidv4 } from 'uuid'
 import { sendWelcomeEmail } from '../email'
+import { config } from '../config'
+import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 
 const oauth = new Hono()
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-prod'
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'
 
 // ─── Google OAuth ──────────────────────────────────────────────────────────────
 
 // GET /api/auth/google — redirect user to Google consent screen
 oauth.get('/google', (c) => {
-  const clientId = process.env.GOOGLE_CLIENT_ID
+  const clientId = config.GOOGLE_CLIENT_ID
   if (!clientId) return c.json({ error: 'Google OAuth not configured' }, 503)
+
+  const state = crypto.randomBytes(32).toString('hex')
+  setCookie(c, 'oauth_state', state, {
+    httpOnly: true,
+    secure: config.NODE_ENV === 'production',
+    sameSite: 'Lax',
+    maxAge: 300, // 5 minutes
+    path: '/',
+  })
 
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: `${process.env.SERVER_URL || 'http://localhost:3001'}/api/auth/google/callback`,
+    redirect_uri: `${config.SERVER_URL}/api/auth/google/callback`,
     response_type: 'code',
     scope: 'openid email profile',
     access_type: 'online',
+    state,
   })
   return c.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`)
 })
@@ -29,12 +39,21 @@ oauth.get('/google', (c) => {
 // GET /api/auth/google/callback — Google redirects here after consent
 oauth.get('/google/callback', async (c) => {
   const code = c.req.query('code')
-  const clientId = process.env.GOOGLE_CLIENT_ID
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET
-  const serverUrl = process.env.SERVER_URL || 'http://localhost:3001'
+  const state = c.req.query('state')
+  const storedState = getCookie(c, 'oauth_state')
+  const clientId = config.GOOGLE_CLIENT_ID
+  const clientSecret = config.GOOGLE_CLIENT_SECRET
+
+  // Clear the state cookie
+  deleteCookie(c, 'oauth_state', { path: '/' })
+
+  // Validate CSRF state
+  if (!state || !storedState || state !== storedState) {
+    return c.redirect(`${config.CLIENT_URL}/sign-in?error=oauth_csrf_failed`)
+  }
 
   if (!code || !clientId || !clientSecret) {
-    return c.redirect(`${CLIENT_URL}/sign-in?error=oauth_failed`)
+    return c.redirect(`${config.CLIENT_URL}/sign-in?error=oauth_failed`)
   }
 
   try {
@@ -46,11 +65,20 @@ oauth.get('/google/callback', async (c) => {
         code,
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: `${serverUrl}/api/auth/google/callback`,
+        redirect_uri: `${config.SERVER_URL}/api/auth/google/callback`,
         grant_type: 'authorization_code',
       }),
     })
+
+    if (!tokenRes.ok) {
+      return c.redirect(`${config.CLIENT_URL}/sign-in?error=oauth_token_exchange_failed`)
+    }
+
     const tokenData = await tokenRes.json() as { access_token: string }
+
+    if (!tokenData.access_token) {
+      return c.redirect(`${config.CLIENT_URL}/sign-in?error=oauth_no_access_token`)
+    }
 
     // Get user profile
     const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -66,11 +94,11 @@ oauth.get('/google/callback', async (c) => {
       avatarUrl: profile.picture,
     })
 
-    const token = jwt.sign({ sub: userId, name, email }, JWT_SECRET, { expiresIn: '7d' })
-    return c.redirect(`${CLIENT_URL}/oauth-callback?token=${token}&userId=${userId}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`)
+    const token = jwt.sign({ sub: userId, name, email }, config.JWT_SECRET, { expiresIn: '7d' })
+    return c.redirect(`${config.CLIENT_URL}/oauth-callback#token=${token}&userId=${userId}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`)
   } catch (err) {
     console.error('Google OAuth error:', err)
-    return c.redirect(`${CLIENT_URL}/sign-in?error=oauth_failed`)
+    return c.redirect(`${config.CLIENT_URL}/sign-in?error=oauth_failed`)
   }
 })
 
@@ -78,13 +106,23 @@ oauth.get('/google/callback', async (c) => {
 
 // GET /api/auth/github — redirect user to GitHub OAuth
 oauth.get('/github', (c) => {
-  const clientId = process.env.GITHUB_CLIENT_ID
+  const clientId = config.GITHUB_CLIENT_ID
   if (!clientId) return c.json({ error: 'GitHub OAuth not configured' }, 503)
+
+  const state = crypto.randomBytes(32).toString('hex')
+  setCookie(c, 'oauth_state', state, {
+    httpOnly: true,
+    secure: config.NODE_ENV === 'production',
+    sameSite: 'Lax',
+    maxAge: 300, // 5 minutes
+    path: '/',
+  })
 
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: `${process.env.SERVER_URL || 'http://localhost:3001'}/api/auth/github/callback`,
+    redirect_uri: `${config.SERVER_URL}/api/auth/github/callback`,
     scope: 'user:email',
+    state,
   })
   return c.redirect(`https://github.com/login/oauth/authorize?${params}`)
 })
@@ -92,12 +130,21 @@ oauth.get('/github', (c) => {
 // GET /api/auth/github/callback — GitHub redirects here after authorization
 oauth.get('/github/callback', async (c) => {
   const code = c.req.query('code')
-  const clientId = process.env.GITHUB_CLIENT_ID
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET
-  const serverUrl = process.env.SERVER_URL || 'http://localhost:3001'
+  const state = c.req.query('state')
+  const storedState = getCookie(c, 'oauth_state')
+  const clientId = config.GITHUB_CLIENT_ID
+  const clientSecret = config.GITHUB_CLIENT_SECRET
+
+  // Clear the state cookie
+  deleteCookie(c, 'oauth_state', { path: '/' })
+
+  // Validate CSRF state
+  if (!state || !storedState || state !== storedState) {
+    return c.redirect(`${config.CLIENT_URL}/sign-in?error=oauth_csrf_failed`)
+  }
 
   if (!code || !clientId || !clientSecret) {
-    return c.redirect(`${CLIENT_URL}/sign-in?error=oauth_failed`)
+    return c.redirect(`${config.CLIENT_URL}/sign-in?error=oauth_failed`)
   }
 
   try {
@@ -109,10 +156,19 @@ oauth.get('/github/callback', async (c) => {
         client_id: clientId,
         client_secret: clientSecret,
         code,
-        redirect_uri: `${serverUrl}/api/auth/github/callback`,
+        redirect_uri: `${config.SERVER_URL}/api/auth/github/callback`,
       }),
     })
+
+    if (!tokenRes.ok) {
+      return c.redirect(`${config.CLIENT_URL}/sign-in?error=oauth_token_exchange_failed`)
+    }
+
     const tokenData = await tokenRes.json() as { access_token: string }
+
+    if (!tokenData.access_token) {
+      return c.redirect(`${config.CLIENT_URL}/sign-in?error=oauth_no_access_token`)
+    }
 
     // Get user profile
     const profileRes = await fetch('https://api.github.com/user', {
@@ -140,11 +196,11 @@ oauth.get('/github/callback', async (c) => {
       avatarUrl: profile.avatar_url,
     })
 
-    const token = jwt.sign({ sub: userId, name: userName, email: userEmail }, JWT_SECRET, { expiresIn: '7d' })
-    return c.redirect(`${CLIENT_URL}/oauth-callback?token=${token}&userId=${userId}&name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`)
+    const token = jwt.sign({ sub: userId, name: userName, email: userEmail }, config.JWT_SECRET, { expiresIn: '7d' })
+    return c.redirect(`${config.CLIENT_URL}/oauth-callback#token=${token}&userId=${userId}&name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`)
   } catch (err) {
     console.error('GitHub OAuth error:', err)
-    return c.redirect(`${CLIENT_URL}/sign-in?error=oauth_failed`)
+    return c.redirect(`${config.CLIENT_URL}/sign-in?error=oauth_failed`)
   }
 })
 

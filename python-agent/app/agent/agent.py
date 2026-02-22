@@ -548,11 +548,21 @@ def run_agent(
         if hasattr(msg, "type") and msg.type == "ai" and isinstance(msg.content, str) and msg.content:
             final_message = msg.content
 
-    # Record cost
+    # Extract actual token usage from LLM response metadata
+    messages = result.get("messages", [])
+    total_input = 0
+    total_output = 0
+    for m in messages:
+        if hasattr(m, 'response_metadata'):
+            usage = m.response_metadata.get("usage", {})
+            total_input += usage.get("input_tokens", usage.get("prompt_tokens", 0))
+            total_output += usage.get("output_tokens", usage.get("completion_tokens", 0))
+
+    # Record cost (fall back to estimates if actual usage not available)
     cost_tracker.record(
         model=spec.api_model_name,
-        input_tokens=len(command.split()) * 4,
-        output_tokens=len(str(actions)) // 4,
+        input_tokens=total_input or len(command.split()) * 4,
+        output_tokens=total_output or len(str(actions)) // 4,
         trace_id=trace_id,
         operation=_classify_operation(command),
     )

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import { io, Socket } from 'socket.io-client'
 import { Board, BoardRole, Workspace, Project } from '@collabboard/shared'
 import { getToken, getUser } from '../hooks/useAuth'
+import { api, SERVER_URL } from '../lib/api'
 import UpgradeModal from '../components/ui/UpgradeModal'
 import UserMenu from '../components/ui/UserMenu'
 import NotificationBell from '../components/ui/NotificationBell'
@@ -13,11 +13,6 @@ import DashboardAIChat from '../components/ui/DashboardAIChat'
 import ProjectModal from '../components/ui/ProjectModal'
 
 const FREE_BOARD_LIMIT = 2
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-
-function authHeaders() {
-  return { Authorization: `Bearer ${getToken()}` }
-}
 
 const roleBadge: Record<BoardRole, { label: string; className: string }> = {
   owner: { label: 'Owner', className: 'text-amber-700 bg-amber-100 border-amber-400/20' },
@@ -62,9 +57,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     Promise.all([
-      axios.get(`${SERVER_URL}/api/boards`, { headers: authHeaders() }),
-      axios.get(`${SERVER_URL}/api/workspaces`, { headers: authHeaders() }),
-      axios.get(`${SERVER_URL}/api/projects`, { headers: authHeaders() }),
+      api.get('/api/boards'),
+      api.get('/api/workspaces'),
+      api.get('/api/projects'),
     ]).then(([boardsRes, wsRes, projRes]) => {
       setBoards(boardsRes.data)
       setWorkspaces(wsRes.data)
@@ -82,14 +77,13 @@ export default function Dashboard() {
 
   async function createBoard() {
     try {
-      const { data } = await axios.post(
-        `${SERVER_URL}/api/boards`,
+      const { data } = await api.post(
+        '/api/boards',
         {
           title: 'Untitled Board',
           workspaceId: selectedProjectId ? selectedProject?.workspace_id : (selectedWorkspaceId ?? undefined),
           projectId: selectedProjectId ?? undefined,
-        },
-        { headers: authHeaders() }
+        }
       )
       navigate(`/board/${data.id}`)
     } catch (err: any) {
@@ -98,14 +92,14 @@ export default function Dashboard() {
   }
 
   async function renameBoard(id: string, title: string) {
-    await axios.patch(`${SERVER_URL}/api/boards/${id}`, { title }, { headers: authHeaders() })
+    await api.patch(`/api/boards/${id}`, { title })
     setBoards(prev => prev.map(b => b.id === id ? { ...b, title } : b))
     setEditingId(null)
   }
 
   async function deleteBoard(id: string) {
     if (!confirm('Delete this board?')) return
-    await axios.delete(`${SERVER_URL}/api/boards/${id}`, { headers: authHeaders() })
+    await api.delete(`/api/boards/${id}`)
     setBoards(prev => prev.filter(b => b.id !== id))
   }
 
@@ -113,10 +107,9 @@ export default function Dashboard() {
     e.preventDefault()
     if (!newWsName.trim()) return
     try {
-      const { data } = await axios.post(
-        `${SERVER_URL}/api/workspaces`,
-        { name: newWsName.trim() },
-        { headers: authHeaders() }
+      const { data } = await api.post(
+        '/api/workspaces',
+        { name: newWsName.trim() }
       )
       setWorkspaces(prev => [...prev, data])
       setSelectedWorkspaceId(data.id)

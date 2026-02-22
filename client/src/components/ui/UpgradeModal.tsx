@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom'
+import { useModalKeyboard } from '../../hooks/useModalKeyboard'
 
 interface UpgradeModalProps {
   onClose: () => void
 }
 
 export default function UpgradeModal({ onClose }: UpgradeModalProps) {
+  useModalKeyboard(onClose)
   const navigate = useNavigate()
 
   return (

@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { getToken } from '../../hooks/useAuth'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+import { api } from '../../lib/api'
 
 interface Notification {
   id: string
@@ -41,19 +38,15 @@ export default function NotificationBell({ socket }: Props) {
 
   const unreadCount = notifications.filter(n => !n.read_at).length
 
-  function authHeaders() {
-    return { Authorization: `Bearer ${getToken()}` }
-  }
-
   async function fetchNotifications() {
     try {
-      const { data } = await axios.get(`${SERVER_URL}/api/notifications`, { headers: authHeaders() })
+      const { data } = await api.get('/api/notifications')
       setNotifications(data)
     } catch {}
   }
 
   async function markAllRead() {
-    await axios.patch(`${SERVER_URL}/api/notifications/read-all`, {}, { headers: authHeaders() })
+    await api.patch('/api/notifications/read-all', {})
     setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })))
   }
 

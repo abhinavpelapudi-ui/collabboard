@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Socket } from 'socket.io-client'
-import axios from 'axios'
-import { getToken } from '../../hooks/useAuth'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+import { api } from '../../lib/api'
 
 interface ActivityEntry {
   id: string
@@ -38,10 +35,8 @@ export default function ActivityLog({ boardId, socket, onClose }: Props) {
 
   // Fetch history (audit entries only)
   useEffect(() => {
-    axios
-      .get(`${SERVER_URL}/api/boards/${boardId}/chat`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
+    api
+      .get(`/api/boards/${boardId}/chat`)
       .then(({ data }) => {
         setEntries(
           data

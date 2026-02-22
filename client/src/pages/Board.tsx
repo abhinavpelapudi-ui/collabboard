@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { getToken } from '../hooks/useAuth'
+import { api } from '../lib/api'
 import { useSocket } from '../hooks/useSocket'
 import { useBoardStore } from '../stores/boardStore'
 import { useUIStore } from '../stores/uiStore'
@@ -17,13 +16,11 @@ import DocumentsPanel from '../components/ui/DocumentsPanel'
 import { EmbeddedDocEditor } from './DocumentEditor'
 import { Board as BoardType, BoardRole } from '@collabboard/shared'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
-
 export default function Board() {
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
   const socketRef = useSocket(boardId!, (newRole) => setRole(newRole))
-  const { objects, addObject, removeObject, pushUndo, undo } = useBoardStore()
+  const { objects, addObject, removeObject, pushUndo, undo, copySelected, pasteClipboard } = useBoardStore()
   const { showAIPanel, selectedIds, setSelectedIds, clearSelection, isConnected, setConnected } = useUIStore()
 
   // Keep stable refs so the keydown handler always sees fresh state
@@ -62,13 +59,9 @@ export default function Board() {
   const isViewer = role === 'viewer'
   const canEdit = role === 'editor' || role === 'owner'
 
-  function authHeaders() {
-    return { Authorization: `Bearer ${getToken()}` }
-  }
-
   useEffect(() => {
     if (!boardId) return
-    axios.get(`${SERVER_URL}/api/boards/${boardId}`, { headers: authHeaders() })
+    api.get(`/api/boards/${boardId}`)
       .then(({ data }) => {
         setBoard(data)
         setTitleValue(data.title)
@@ -81,13 +74,34 @@ export default function Board() {
       const focused = document.activeElement
       const inInput = focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')
       if (inInput) return
+      if ((focused as HTMLElement).isContentEditable) return
 
       // Undo
       if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); undo(); return }
 
+      // Ctrl/Cmd+V — paste clipboard
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        e.preventDefault()
+        pushUndo()
+        const newIds = pasteClipboard(20, 20)
+        newIds.forEach(id => {
+          const obj = useBoardStore.getState().objects.get(id)
+          if (obj) socketRef.current?.emit('object:create', { boardId, object: obj })
+        })
+        if (newIds.length) setSelectedIds(newIds)
+        return
+      }
+
       const ids = selectedIdsRef.current
       const objs = objectsRef.current
       if (ids.length === 0) return
+
+      // Ctrl/Cmd+C — copy selected objects
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+        e.preventDefault()
+        copySelected(ids)
+        return
+      }
 
       // Delete / Backspace — remove all selected objects
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -127,11 +141,11 @@ export default function Board() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [boardId, undo, pushUndo, removeObject, addObject, clearSelection, setSelectedIds])
+  }, [boardId, undo, pushUndo, removeObject, addObject, clearSelection, setSelectedIds, copySelected, pasteClipboard])
 
   async function saveTitle() {
     if (!board || titleValue === board.title) { setEditingTitle(false); return }
-    await axios.patch(`${SERVER_URL}/api/boards/${boardId}`, { title: titleValue }, { headers: authHeaders() })
+    await api.patch(`/api/boards/${boardId}`, { title: titleValue })
     setBoard(prev => prev ? { ...prev, title: titleValue } : prev)
     setEditingTitle(false)
   }

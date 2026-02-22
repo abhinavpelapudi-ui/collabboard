@@ -1,20 +1,16 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
 import { BoardMember, BoardRole } from '@collabboard/shared'
-import { getToken, getUser } from '../../hooks/useAuth'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+import { getUser } from '../../hooks/useAuth'
+import { api } from '../../lib/api'
+import { useModalKeyboard } from '../../hooks/useModalKeyboard'
 
 interface Props {
   boardId: string
   onClose: () => void
 }
 
-function authHeaders() {
-  return { Authorization: `Bearer ${getToken()}` }
-}
-
 export default function ShareModal({ boardId, onClose }: Props) {
+  useModalKeyboard(onClose)
   const [members, setMembers] = useState<BoardMember[]>([])
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'editor' | 'viewer'>('editor')
@@ -25,9 +21,7 @@ export default function ShareModal({ boardId, onClose }: Props) {
 
   async function fetchMembers() {
     try {
-      const { data } = await axios.get(`${SERVER_URL}/api/boards/${boardId}/members`, {
-        headers: authHeaders(),
-      })
+      const { data } = await api.get(`/api/boards/${boardId}/members`)
       setMembers(data)
     } catch {
       // ignore
@@ -43,10 +37,9 @@ export default function ShareModal({ boardId, onClose }: Props) {
     setInviting(true)
     setError('')
     try {
-      const { data } = await axios.post(
-        `${SERVER_URL}/api/boards/${boardId}/members`,
-        { email: email.trim(), role },
-        { headers: authHeaders() }
+      const { data } = await api.post(
+        `/api/boards/${boardId}/members`,
+        { email: email.trim(), role }
       )
       setMembers(prev => {
         const existing = prev.findIndex(m => m.user_id === data.user_id)
@@ -67,10 +60,9 @@ export default function ShareModal({ boardId, onClose }: Props) {
 
   async function changeRole(userId: string, newRole: 'editor' | 'viewer') {
     try {
-      await axios.patch(
-        `${SERVER_URL}/api/boards/${boardId}/members/${userId}`,
-        { role: newRole },
-        { headers: authHeaders() }
+      await api.patch(
+        `/api/boards/${boardId}/members/${userId}`,
+        { role: newRole }
       )
       setMembers(prev => prev.map(m => m.user_id === userId ? { ...m, role: newRole } : m))
     } catch (err: any) {
@@ -80,9 +72,8 @@ export default function ShareModal({ boardId, onClose }: Props) {
 
   async function removeMember(userId: string) {
     try {
-      await axios.delete(
-        `${SERVER_URL}/api/boards/${boardId}/members/${userId}`,
-        { headers: authHeaders() }
+      await api.delete(
+        `/api/boards/${boardId}/members/${userId}`
       )
       setMembers(prev => prev.filter(m => m.user_id !== userId))
     } catch (err: any) {

@@ -1,5 +1,6 @@
 """Agent API routes — the main interface between Node.js and the Python agent."""
 
+import asyncio
 import uuid
 import logging
 
@@ -31,7 +32,8 @@ async def handle_command(request: AgentCommandRequest):
     if not request.command.strip():
         raise HTTPException(status_code=400, detail="Command cannot be empty")
 
-    result = run_agent(
+    result = await asyncio.to_thread(
+        run_agent,
         command=request.command,
         board_state=request.board_state,
         board_id=request.board_id,
@@ -168,10 +170,10 @@ async def handle_dashboard_query(request: DashboardQueryRequest):
     llm = _create_llm(spec)
 
     from langchain_core.messages import SystemMessage, HumanMessage
-    result = llm.invoke([
-        SystemMessage(content=prompt),
-        HumanMessage(content=request.command),
-    ])
+    result = await asyncio.to_thread(
+        llm.invoke,
+        [SystemMessage(content=prompt), HumanMessage(content=request.command)],
+    )
 
     # Parse JSON from LLM response
     import json

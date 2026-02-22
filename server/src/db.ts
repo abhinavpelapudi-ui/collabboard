@@ -1,11 +1,9 @@
 import { Pool } from 'pg'
-import dotenv from 'dotenv'
-
-dotenv.config()
+import { config } from './config'
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString: config.DATABASE_URL,
+  ssl: config.NODE_ENV === 'production' ? { rejectUnauthorized: true, ...(config.DB_CA_CERT ? { ca: config.DB_CA_CERT } : {}) } : false,
 })
 
 export async function testConnection() {

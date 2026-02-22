@@ -1,15 +1,11 @@
 """Document parsing, RAG, and analysis tools."""
 
-import uuid
 from typing import Literal
 from langchain_core.tools import tool
 
 from app.services.vector_store import search_documents as _search_docs
 from app.services.chart_service import render_chart
-
-
-def _new_temp_id(prefix: str = "obj") -> str:
-    return f"{prefix}-{uuid.uuid4().hex[:8]}"
+from app.agent.tools.utils import new_temp_id
 
 
 @tool
@@ -46,7 +42,7 @@ def analyze_document(
     # Fetch relevant chunks
     results = _search_docs(board_id=board_id, query=query, top_k=8)
     if not results:
-        return [{"action": "create", "object_type": "text", "temp_id": _new_temp_id("nodata"),
+        return [{"action": "create", "object_type": "text", "temp_id": new_temp_id("nodata"),
                  "props": {"text": "No documents found. Upload a file first.",
                            "x": start_x, "y": start_y, "width": 300, "height": 30,
                            "font_size": 14, "color": "#fca5a5", "rotation": 0}}]
@@ -58,7 +54,7 @@ def analyze_document(
 
     if analysis_type == "summary":
         # Create sticky notes with key excerpts
-        frame_id = _new_temp_id("sum")
+        frame_id = new_temp_id("sum")
         note_w, note_h = 220, 140
         gap = 20
         cols = min(3, len(chunks))
@@ -80,7 +76,7 @@ def analyze_document(
             # Truncate long chunks for readability
             text = chunk[:200] + "..." if len(chunk) > 200 else chunk
             actions.append({"action": "create", "object_type": "sticky",
-                            "temp_id": _new_temp_id("sn"),
+                            "temp_id": new_temp_id("sn"),
                             "props": {"text": text, "x": cx, "y": cy,
                                       "width": note_w, "height": note_h,
                                       "color": colors[i % len(colors)],
@@ -88,7 +84,7 @@ def analyze_document(
 
     elif analysis_type == "key_points":
         # Extract and display as numbered text items
-        frame_id = _new_temp_id("kp")
+        frame_id = new_temp_id("kp")
         item_h = 40
         frame_w = 500
         num_items = min(8, len(chunks))
@@ -102,7 +98,7 @@ def analyze_document(
         for i, chunk in enumerate(chunks[:num_items]):
             text = chunk[:120] + "..." if len(chunk) > 120 else chunk
             actions.append({"action": "create", "object_type": "text",
-                            "temp_id": _new_temp_id("kpt"),
+                            "temp_id": new_temp_id("kpt"),
                             "props": {"text": f"{i + 1}. {text}",
                                       "x": start_x + 20, "y": start_y + 70 + i * (item_h + 10),
                                       "width": frame_w - 40, "height": item_h,
@@ -116,7 +112,7 @@ def analyze_document(
         frame_w = num_steps * (step_w + gap) + 80
         frame_h = step_h + 160
 
-        frame_id = _new_temp_id("tl")
+        frame_id = new_temp_id("tl")
         actions.append({"action": "create", "object_type": "frame", "temp_id": frame_id,
                         "props": {"title": "Timeline", "x": start_x, "y": start_y,
                                   "width": frame_w, "height": frame_h,
@@ -125,7 +121,7 @@ def analyze_document(
         colors = ["#BFDBFE", "#93C5FD", "#6EE7B7", "#86EFAC", "#BBF7D0", "#FEF08A"]
         step_ids = []
         for i, chunk in enumerate(chunks[:num_steps]):
-            sid = _new_temp_id("ts")
+            sid = new_temp_id("ts")
             step_ids.append(sid)
             text = chunk[:100] + "..." if len(chunk) > 100 else chunk
             actions.append({"action": "create", "object_type": "sticky", "temp_id": sid,
@@ -138,7 +134,7 @@ def analyze_document(
         # Connect steps sequentially
         for i in range(len(step_ids) - 1):
             actions.append({"action": "create", "object_type": "connector",
-                            "temp_id": _new_temp_id("tc"),
+                            "temp_id": new_temp_id("tc"),
                             "props": {"from_temp_id": step_ids[i], "to_temp_id": step_ids[i + 1],
                                       "style": "solid", "color": "#6366f1",
                                       "x": 0, "y": 0, "width": 0, "height": 0, "rotation": 0}})
@@ -152,7 +148,7 @@ def analyze_document(
         frame_w = chart_w + 80
         frame_h = chart_h + 100
 
-        frame_id = _new_temp_id("stat")
+        frame_id = new_temp_id("stat")
         actions.append({"action": "create", "object_type": "frame", "temp_id": frame_id,
                         "props": {"title": "Document Statistics", "x": start_x, "y": start_y,
                                   "width": frame_w, "height": frame_h,
@@ -166,7 +162,7 @@ def analyze_document(
             width_px=chart_w, height_px=chart_h,
         )
         actions.append({"action": "create", "object_type": "image",
-                        "temp_id": _new_temp_id("chart"),
+                        "temp_id": new_temp_id("chart"),
                         "props": {"src": bar_url, "alt": "Document word count chart",
                                   "x": start_x + 40, "y": start_y + 70,
                                   "width": chart_w, "height": chart_h, "rotation": 0}})

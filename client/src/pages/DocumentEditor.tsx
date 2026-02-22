@@ -1,12 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { getToken } from '../hooks/useAuth'
+import { api } from '../lib/api'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
 
 interface EmbeddedProps {
   boardId: string
@@ -33,17 +30,18 @@ function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId:
   const [editingTitle, setEditingTitle] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  function authHeaders() {
-    return { Authorization: `Bearer ${getToken()}` }
-  }
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+    }
+  }, [])
 
   const saveContent = useCallback((json: object) => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      axios.patch(
-        `${SERVER_URL}/api/boards/${boardId}/docs/${docId}`,
-        { content: json },
-        { headers: authHeaders() }
+      api.patch(
+        `/api/boards/${boardId}/docs/${docId}`,
+        { content: json }
       ).catch(() => {})
     }, 1000)
   }, [boardId, docId])
@@ -66,9 +64,7 @@ function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId:
   // Load document
   useEffect(() => {
     if (!boardId || !docId) return
-    axios.get(`${SERVER_URL}/api/boards/${boardId}/docs/${docId}`, {
-      headers: authHeaders(),
-    }).then(({ data }) => {
+    api.get(`/api/boards/${boardId}/docs/${docId}`).then(({ data }) => {
       const doc = data.document
       setTitle(doc.title || 'Untitled')
       if (editor && doc.content && Object.keys(doc.content).length > 0) {
@@ -82,10 +78,9 @@ function DocumentEditorInner({ boardId, docId, onClose, standalone }: { boardId:
     setEditingTitle(false)
     if (!title.trim()) { setTitle('Untitled'); return }
     try {
-      await axios.patch(
-        `${SERVER_URL}/api/boards/${boardId}/docs/${docId}`,
-        { title: title.trim() },
-        { headers: authHeaders() }
+      await api.patch(
+        `/api/boards/${boardId}/docs/${docId}`,
+        { title: title.trim() }
       )
     } catch {}
   }

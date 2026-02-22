@@ -4,14 +4,13 @@ import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { stats } from '../stats'
 import { getRealtimeStats } from '../sockets/socketServer'
+import { config } from '../config'
 
 const admin = new Hono()
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'admin-dev-secret'
-
 function requireAdminSecret(c: any, next: any) {
   const secret = c.req.header('X-Admin-Secret')
-  if (secret !== ADMIN_SECRET) return c.json({ error: 'Forbidden' }, 403)
+  if (secret !== config.ADMIN_SECRET) return c.json({ error: 'Forbidden' }, 403)
   return next()
 }
 

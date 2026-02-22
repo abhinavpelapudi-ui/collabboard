@@ -8,7 +8,6 @@ calling with Llama models on Groq.
 """
 
 import json
-import uuid
 from typing import Literal
 from langchain_core.tools import tool
 
@@ -16,19 +15,17 @@ from app.services.layout_service import (
     describe_board_layout,
     find_open_position,
 )
+from app.agent.tools.utils import new_temp_id
 
-# Thread-local board state set before each agent invocation
-_current_board_state: list[dict] = []
+import contextvars
 
+_current_board_state: contextvars.ContextVar[list[dict]] = contextvars.ContextVar(
+    "_current_board_state", default=[]
+)
 
 def set_board_state(board_state: list[dict]):
-    """Set the current board state for layout-aware tools."""
-    global _current_board_state
-    _current_board_state = board_state
-
-
-def _new_temp_id(prefix: str = "obj") -> str:
-    return f"{prefix}-{uuid.uuid4().hex[:8]}"
+    """Set board state for the current request context (thread-safe)."""
+    _current_board_state.set(board_state)
 
 
 @tool
@@ -44,10 +41,10 @@ def get_board_layout(needed_width: int = 0, needed_height: int = 0) -> str:
         needed_width: Width in pixels of content to place (0 = just describe layout)
         needed_height: Height in pixels of content to place (0 = just describe layout)
     """
-    layout_desc = describe_board_layout(_current_board_state)
+    layout_desc = describe_board_layout(_current_board_state.get())
     if needed_width > 0 and needed_height > 0:
         x, y = find_open_position(
-            _current_board_state,
+            _current_board_state.get(),
             needed_width=needed_width,
             needed_height=needed_height,
         )
@@ -75,7 +72,7 @@ def create_sticky_note(text: str, x: int, y: int, color: str = "#FEF08A") -> dic
     return {
         "action": "create",
         "object_type": "sticky",
-        "temp_id": _new_temp_id("sticky"),
+        "temp_id": new_temp_id("sticky"),
         "props": {
             "text": text,
             "x": x,
@@ -97,7 +94,7 @@ def create_shape(
     return {
         "action": "create",
         "object_type": shape_type,
-        "temp_id": _new_temp_id(shape_type),
+        "temp_id": new_temp_id(shape_type),
         "props": {
             "x": x,
             "y": y,
@@ -117,7 +114,7 @@ def create_frame(title: str, x: int, y: int, width: int, height: int) -> dict:
     return {
         "action": "create",
         "object_type": "frame",
-        "temp_id": _new_temp_id("frame"),
+        "temp_id": new_temp_id("frame"),
         "props": {
             "title": title,
             "x": x,
@@ -136,7 +133,7 @@ def create_text(text: str, x: int, y: int, font_size: int = 16, color: str = "#e
     return {
         "action": "create",
         "object_type": "text",
-        "temp_id": _new_temp_id("text"),
+        "temp_id": new_temp_id("text"),
         "props": {
             "text": text,
             "x": x,
@@ -156,7 +153,7 @@ def create_connector(from_temp_id: str, to_temp_id: str, color: str = "#6366f1")
     return {
         "action": "create",
         "object_type": "connector",
-        "temp_id": _new_temp_id("conn"),
+        "temp_id": new_temp_id("conn"),
         "props": {
             "from_temp_id": from_temp_id,
             "to_temp_id": to_temp_id,
@@ -192,6 +189,10 @@ def update_object(
         width: New width (-1 to keep current)
         height: New height (-1 to keep current)
     """
+    board_state = _current_board_state.get()
+    existing = next((o for o in board_state if o.get("id") == object_id), None)
+    obj_type = existing.get("type", "sticky") if existing else "sticky"
+
     props: dict = {}
     if text:
         props["text"] = text
@@ -209,7 +210,7 @@ def update_object(
 
     return {
         "action": "update",
-        "object_type": "sticky",
+        "object_type": obj_type,
         "object_id": object_id,
         "props": props,
     }
@@ -218,9 +219,13 @@ def update_object(
 @tool
 def delete_object(object_id: str) -> dict:
     """Delete an existing object from the board. Requires the real object ID."""
+    board_state = _current_board_state.get()
+    existing = next((o for o in board_state if o.get("id") == object_id), None)
+    obj_type = existing.get("type", "sticky") if existing else "sticky"
+
     return {
         "action": "delete",
-        "object_type": "sticky",
+        "object_type": obj_type,
         "object_id": object_id,
         "props": {},
     }
@@ -234,7 +239,7 @@ def find_objects_by_text(search_text: str) -> str:
     """
     query = search_text.lower()
     results = []
-    for obj in _current_board_state:
+    for obj in _current_board_state.get():
         text = (obj.get("text", "") or obj.get("title", "")).lower()
         if query in text:
             results.append({

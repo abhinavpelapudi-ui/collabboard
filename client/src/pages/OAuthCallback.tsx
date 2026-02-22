@@ -1,18 +1,19 @@
 import { useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { saveAuth } from '../hooks/useAuth'
 
 export default function OAuthCallback() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
 
   useEffect(() => {
-    const token = searchParams.get('token')
-    const userId = searchParams.get('userId')
-    const name = searchParams.get('name')
-    const email = searchParams.get('email')
+    const params = new URLSearchParams(window.location.hash.slice(1))
+    const token = params.get('token')
+    const userId = params.get('userId')
+    const name = params.get('name')
+    const email = params.get('email')
 
     if (token && userId && name && email) {
+      window.history.replaceState({}, '', '/oauth-callback')
       saveAuth(token, { userId, name, email })
       navigate('/dashboard', { replace: true })
     } else {

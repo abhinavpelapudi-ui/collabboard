@@ -1,7 +1,9 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env")
+
     groq_api_key: str = ""
     openai_api_key: str = ""
     anthropic_api_key: str = ""
@@ -12,10 +14,8 @@ class Settings(BaseSettings):
     langfuse_public_key: str = ""
     langfuse_host: str = "https://us.cloud.langfuse.com"
     chroma_persist_dir: str = "/app/chroma_data"
+    agent_shared_secret: str = ""
     max_agent_iterations: int = 10
-
-    class Config:
-        env_file = ".env"
 
 
 settings = Settings()

@@ -1,3 +1,8 @@
 import Redis from 'ioredis'
+import { config } from './config'
 
-export const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null
+export const redis = config.REDIS_URL ? new Redis(config.REDIS_URL) : null
+
+if (redis) {
+  redis.on('error', (err) => console.error('Redis connection error:', err.message))
+}

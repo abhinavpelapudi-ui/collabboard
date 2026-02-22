@@ -12,10 +12,8 @@ interface Props {
 }
 
 function ConnectorLine({ object, isSelected }: Props) {
-  const objects = useBoardStore(s => s.objects)
-
-  const from = objects.get(object.from_id)
-  const to = objects.get(object.to_id)
+  const from = useBoardStore(s => s.objects.get(object.from_id))
+  const to = useBoardStore(s => s.objects.get(object.to_id))
   if (!from || !to) return null
 
   const fromX = from.x + from.width / 2

@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { getToken, savePlan } from '../hooks/useAuth'
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+import { savePlan } from '../hooks/useAuth'
+import { api } from '../lib/api'
 
 const PLAN_LABELS: Record<string, string> = {
   pro: 'Pro',
@@ -24,11 +22,9 @@ export default function ActivateLicense() {
     setSuccess('')
     setLoading(true)
     try {
-      const token = getToken()
-      const { data } = await axios.post(
-        `${SERVER_URL}/api/auth/activate-license`,
-        { key: key.trim() },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const { data } = await api.post(
+        '/api/auth/activate-license',
+        { key: key.trim() }
       )
       savePlan(data.plan)
       setSuccess(`License activated! Your plan is now ${PLAN_LABELS[data.plan] ?? data.plan}.`)

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Literal
 
 
@@ -9,14 +9,8 @@ class BoardAction(BaseModel):
     writes to PostgreSQL, and broadcasts via Socket.IO.
     """
 
-    action: Literal["create", "update", "delete"]
-    object_type: Literal["sticky", "rect", "circle", "text", "frame", "connector", "image"]
-    temp_id: str | None = None
-    object_id: str | None = None
-    props: dict
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "examples": [
                 {
                     "action": "create",
@@ -35,3 +29,10 @@ class BoardAction(BaseModel):
                 }
             ]
         }
+    )
+
+    action: Literal["create", "update", "delete"]
+    object_type: Literal["sticky", "rect", "circle", "text", "frame", "connector", "image"]
+    temp_id: str | None = None
+    object_id: str | None = None
+    props: dict

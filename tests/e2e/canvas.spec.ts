@@ -7,6 +7,7 @@ import {
   dragObject,
   waitForCanvasPaint,
   getCanvasCenter,
+  modKey,
 } from '../helpers/canvas.helper'
 
 test.describe('Canvas Interactions', () => {
@@ -110,7 +111,7 @@ test.describe('Canvas Interactions', () => {
     await placeStickyNote(authenticatedPage, center.x, center.y)
     await waitForCanvasPaint(authenticatedPage, 500)
 
-    await authenticatedPage.keyboard.press('Meta+z')
+    await authenticatedPage.keyboard.press(`${modKey()}+z`)
     await waitForCanvasPaint(authenticatedPage, 300)
 
     // No crash after undo

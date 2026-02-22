@@ -3,6 +3,8 @@
 import logging
 import chromadb
 
+from app.config import settings
+
 logger = logging.getLogger(__name__)
 
 _client: chromadb.ClientAPI | None = None
@@ -11,8 +13,8 @@ _client: chromadb.ClientAPI | None = None
 def get_chroma_client() -> chromadb.ClientAPI:
     global _client
     if _client is None:
-        _client = chromadb.Client()
-        logger.info("ChromaDB initialized (in-memory)")
+        _client = chromadb.PersistentClient(path=settings.chroma_persist_dir)
+        logger.info("ChromaDB initialized (persistent at %s)", settings.chroma_persist_dir)
     return _client
 
 

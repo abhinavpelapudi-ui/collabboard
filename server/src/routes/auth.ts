@@ -2,14 +2,13 @@ import { Hono } from 'hono'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { randomInt } from 'node:crypto'
 import { pool } from '../db'
 import { v4 as uuidv4 } from 'uuid'
 import { sendWelcomeEmail, sendEmailConfirmation, sendOTPEmail } from '../email'
+import { config } from '../config'
 
 const auth = new Hono()
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-prod'
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173'
 
 // POST /api/auth/register
 auth.post('/register', async (c) => {
@@ -52,7 +51,7 @@ auth.post('/register', async (c) => {
   sendEmailConfirmation(email, name, confirmToken).catch(console.error)
   sendWelcomeEmail(email, name).catch(console.error)
 
-  const token = jwt.sign({ sub: userId, name, email }, JWT_SECRET, { expiresIn: '7d' })
+  const token = jwt.sign({ sub: userId, name, email }, config.JWT_SECRET, { expiresIn: '7d' })
   return c.json({ token, userId, name, email }, 201)
 })
 
@@ -93,7 +92,7 @@ auth.post('/login', async (c) => {
 
   const token = jwt.sign(
     { sub: user.id, name: user.name, email: user.email },
-    JWT_SECRET,
+    config.JWT_SECRET,
     { expiresIn: '7d' }
   )
   return c.json({ token, userId: user.id, name: user.name, email: user.email })
@@ -104,7 +103,7 @@ auth.get('/me', async (c) => {
   const token = c.req.header('Authorization')?.split(' ')[1]
   if (!token) return c.json({ error: 'No token' }, 401)
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { sub: string; name: string; email: string }
+    const payload = jwt.verify(token, config.JWT_SECRET) as { sub: string; name: string; email: string }
     const { rows } = await pool.query('SELECT plan, email_confirmed FROM users WHERE id = $1', [payload.sub])
     const plan = rows[0]?.plan ?? 'free'
     const emailConfirmed = rows[0]?.email_confirmed ?? false
@@ -117,22 +116,22 @@ auth.get('/me', async (c) => {
 // GET /api/auth/confirm-email?token=... — confirm email via link
 auth.get('/confirm-email', async (c) => {
   const token = c.req.query('token')
-  if (!token) return c.redirect(`${CLIENT_URL}/sign-in?error=invalid_token`)
+  if (!token) return c.redirect(`${config.CLIENT_URL}/sign-in?error=invalid_token`)
 
   const { rows } = await pool.query(
     `SELECT user_id, expires_at, confirmed_at FROM email_confirmations WHERE token = $1`,
     [token]
   )
 
-  if (!rows[0]) return c.redirect(`${CLIENT_URL}/sign-in?error=invalid_token`)
-  if (rows[0].confirmed_at) return c.redirect(`${CLIENT_URL}/dashboard?confirmed=1`)
-  if (new Date(rows[0].expires_at) < new Date()) return c.redirect(`${CLIENT_URL}/sign-in?error=token_expired`)
+  if (!rows[0]) return c.redirect(`${config.CLIENT_URL}/sign-in?error=invalid_token`)
+  if (rows[0].confirmed_at) return c.redirect(`${config.CLIENT_URL}/dashboard?confirmed=1`)
+  if (new Date(rows[0].expires_at) < new Date()) return c.redirect(`${config.CLIENT_URL}/sign-in?error=token_expired`)
 
   const userId = rows[0].user_id
   await pool.query('UPDATE users SET email_confirmed = true WHERE id = $1', [userId])
   await pool.query('UPDATE email_confirmations SET confirmed_at = now() WHERE token = $1', [token])
 
-  return c.redirect(`${CLIENT_URL}/dashboard?confirmed=1`)
+  return c.redirect(`${config.CLIENT_URL}/dashboard?confirmed=1`)
 })
 
 // POST /api/auth/otp/send — send a 6-digit OTP to an email
@@ -145,7 +144,7 @@ auth.post('/otp/send', async (c) => {
   }
 
   const { email } = parsed
-  const code = String(Math.floor(100000 + Math.random() * 900000))
+  const code = String(randomInt(100000, 999999))
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
   // Expire previous unused codes for this email
@@ -156,14 +155,16 @@ auth.post('/otp/send', async (c) => {
     [email, code, expiresAt]
   )
 
-  if (!process.env.RESEND_API_KEY) {
+  if (!config.RESEND_API_KEY) {
     // Dev mode — log code to server console instead of sending email
     console.log(`[DEV] OTP for ${email}: ${code}`)
     return c.json({ ok: true })
   }
 
-  // Always log the code server-side so it can be retrieved from Railway logs
-  console.log(`[otp] Code for ${email}: ${code}  (expires in 10 min)`)
+  // Only log the code server-side in non-production
+  if (config.NODE_ENV !== 'production') {
+    console.log(`[otp] Code for ${email}: ${code}  (expires in 10 min)`)
+  }
 
   try {
     await sendOTPEmail(email, code)
@@ -223,7 +224,7 @@ auth.post('/otp/verify', async (c) => {
     sendWelcomeEmail(email, name).catch(console.error)
   }
 
-  const token = jwt.sign({ sub: userId, name, email }, JWT_SECRET, { expiresIn: '7d' })
+  const token = jwt.sign({ sub: userId, name, email }, config.JWT_SECRET, { expiresIn: '7d' })
   return c.json({ token, userId, name, email })
 })
 
@@ -234,7 +235,7 @@ auth.post('/activate-license', async (c) => {
 
   let userId: string
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { sub: string }
+    const payload = jwt.verify(token, config.JWT_SECRET) as { sub: string }
     userId = payload.sub
   } catch {
     return c.json({ error: 'Invalid token' }, 401)

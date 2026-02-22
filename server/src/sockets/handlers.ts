@@ -45,7 +45,7 @@ function getBoardUsers(boardId: string): PresenceUser[] {
 
 export function registerSocketHandlers(io: Server, socket: Socket & { userId: string; userName: string; userColor: string }) {
   registerUserSocket(socket.userId, socket.id)
-  let currentBoardId: string | null = null
+  const joinedBoards = new Set<string>()
 
   // ─── board:join ───────────────────────────────────────────────────────────
   socket.on('board:join', async ({ boardId }: { boardId: string }) => {
@@ -58,7 +58,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
       return
     }
 
-    currentBoardId = boardId
+    joinedBoards.add(boardId)
     socket.join(`board:${boardId}`)
 
     // Cache role for fast checking on object events
@@ -180,7 +180,9 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
           const typeLabel = TYPE_LABELS[rows[0]?.type] || 'object'
           const action = isTextChange ? 'edited text on' : 'changed color of'
           await emitAudit(io, socket, boardId, `${socket.userName} ${action} a ${typeLabel}`)
-        } catch {}
+        } catch (err) {
+          console.error('Failed to emit audit for object:update', err)
+        }
       }, 2000))
     }
   })
@@ -254,13 +256,24 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
     }
   })
 
+  // ─── board:leave ─────────────────────────────────────────────────────────
+  socket.on('board:leave', ({ boardId }: { boardId: string }) => {
+    joinedBoards.delete(boardId)
+    presence.get(boardId)?.delete(socket.userId)
+    socket.leave(`board:${boardId}`)
+    socket.to(`board:${boardId}`).emit('cursor:leave', { userId: socket.userId })
+    io.to(`board:${boardId}`).emit('presence:update', { users: getBoardUsers(boardId) })
+  })
+
   // ─── disconnect ───────────────────────────────────────────────────────────
   socket.on('disconnect', () => {
     unregisterUserSocket(socket.userId, socket.id)
-    if (!currentBoardId) return
 
-    presence.get(currentBoardId)?.delete(socket.userId)
-    socket.to(`board:${currentBoardId}`).emit('cursor:leave', { userId: socket.userId })
-    io.to(`board:${currentBoardId}`).emit('presence:update', { users: getBoardUsers(currentBoardId) })
+    for (const boardId of joinedBoards) {
+      presence.get(boardId)?.delete(socket.userId)
+      socket.to(`board:${boardId}`).emit('cursor:leave', { userId: socket.userId })
+      io.to(`board:${boardId}`).emit('presence:update', { users: getBoardUsers(boardId) })
+    }
+    joinedBoards.clear()
   })
 }
