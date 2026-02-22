@@ -43,9 +43,25 @@ function getBoardUsers(boardId: string): PresenceUser[] {
   return Array.from(presence.get(boardId)?.values() ?? []).map(({ socketId, ...user }) => user)
 }
 
+// Per-socket rate limiter: tracks event counts in rolling windows
+function createSocketRateLimiter(maxEvents: number, windowMs: number) {
+  const timestamps: number[] = []
+  return function check(): boolean {
+    const now = Date.now()
+    while (timestamps.length > 0 && timestamps[0] <= now - windowMs) timestamps.shift()
+    if (timestamps.length >= maxEvents) return false
+    timestamps.push(now)
+    return true
+  }
+}
+
 export function registerSocketHandlers(io: Server, socket: Socket & { userId: string; userName: string; userColor: string }) {
   registerUserSocket(socket.userId, socket.id)
   const joinedBoards = new Set<string>()
+
+  // Rate limiters: object events 30/sec, chat 5/sec
+  const objectRL = createSocketRateLimiter(30, 1000)
+  const chatRL = createSocketRateLimiter(5, 1000)
 
   // ─── board:join ───────────────────────────────────────────────────────────
   socket.on('board:join', async ({ boardId }: { boardId: string }) => {
@@ -109,6 +125,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
 
   // ─── object:create ────────────────────────────────────────────────────────
   socket.on('object:create', async ({ boardId, object }: { boardId: string; object: BoardObject }) => {
+    if (!objectRL()) return
     const role = getCachedRole(socket.id, boardId)
     if (role === 'viewer') {
       socket.emit('error', { message: 'Viewers cannot create objects' })
@@ -140,6 +157,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
   const auditQueue = new Map<string, ReturnType<typeof setTimeout>>()
 
   socket.on('object:update', async ({ boardId, objectId, props }: { boardId: string; objectId: string; props: Partial<BoardObject> }) => {
+    if (!objectRL()) return
     const role = getCachedRole(socket.id, boardId)
     if (role === 'viewer') {
       socket.emit('error', { message: 'Viewers cannot edit objects' })
@@ -189,6 +207,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
 
   // ─── object:delete ────────────────────────────────────────────────────────
   socket.on('object:delete', async ({ boardId, objectId }: { boardId: string; objectId: string }) => {
+    if (!objectRL()) return
     const role = getCachedRole(socket.id, boardId)
     if (role === 'viewer') {
       socket.emit('error', { message: 'Viewers cannot delete objects' })
@@ -211,6 +230,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
 
   // ─── chat:send ────────────────────────────────────────────────────────────
   socket.on('chat:send', async ({ boardId, content }: { boardId: string; content: string }) => {
+    if (!chatRL()) return
     const role = getCachedRole(socket.id, boardId)
     if (!role) return // user hasn't joined the board room
 
@@ -238,6 +258,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
 
   // ─── comment:create ──────────────────────────────────────────────────────
   socket.on('comment:create', async ({ boardId, objectId, content }: { boardId: string; objectId: string; content: string }) => {
+    if (!chatRL()) return
     const role = getCachedRole(socket.id, boardId)
     if (!role) return
 

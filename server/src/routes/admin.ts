@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import crypto from 'crypto'
 import { pool } from '../db'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
@@ -9,8 +10,11 @@ import { config } from '../config'
 const admin = new Hono()
 
 function requireAdminSecret(c: any, next: any) {
-  const secret = c.req.header('X-Admin-Secret')
-  if (secret !== config.ADMIN_SECRET) return c.json({ error: 'Forbidden' }, 403)
+  const secret = c.req.header('X-Admin-Secret') || ''
+  const expected = config.ADMIN_SECRET
+  if (secret.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(expected))) {
+    return c.json({ error: 'Forbidden' }, 403)
+  }
   return next()
 }
 

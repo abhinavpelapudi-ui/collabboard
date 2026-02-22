@@ -42,6 +42,17 @@ app.onError((err, c) => {
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use('*', logger())
 app.use('*', cors({ origin: config.CLIENT_URL, credentials: true }))
+
+// Security headers
+app.use('*', async (c, next) => {
+  await next()
+  c.header('X-Content-Type-Options', 'nosniff')
+  c.header('X-Frame-Options', 'DENY')
+  if (config.NODE_ENV === 'production') {
+    c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
+})
+
 app.use('*', trackRequest)
 // Global rate limit: 200 req/min per IP; tighter 30/min on auth routes
 app.use('/api/*', rateLimit(200, 60_000))

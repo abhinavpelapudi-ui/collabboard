@@ -44,6 +44,7 @@ def render_chart(
     Returns:
         A data:image/png;base64,... URL string
     """
+    MAX_DATA_POINTS = 200
     with _chart_lock:
         fig, ax = plt.subplots(figsize=(width_px / 100, height_px / 100), dpi=100)
 
@@ -60,8 +61,8 @@ def render_chart(
         ax.spines["left"].set_color(GRID_COLOR)
         ax.grid(True, color=GRID_COLOR, alpha=0.3)
 
-        labels = data.get("labels", [])
-        values = data.get("values", [])
+        labels = data.get("labels", [])[:MAX_DATA_POINTS]
+        values = data.get("values", [])[:MAX_DATA_POINTS]
 
         if chart_type == "bar":
             colors = [ACCENT_COLORS[i % len(ACCENT_COLORS)] for i in range(len(labels))]
@@ -138,9 +139,11 @@ def render_gantt(
         "todo": "#6b7280",
     }
 
+    MAX_GANTT_TASKS = 200
+
     # Parse tasks and compute dates
     parsed = []
-    for t in tasks:
+    for t in tasks[:MAX_GANTT_TASKS]:
         name = t.get("name", "Task")
         try:
             start = datetime.strptime(t.get("start_date", ""), "%Y-%m-%d")

@@ -56,10 +56,12 @@ documents.patch('/boards/:boardId/docs/:docId', requireAuth, requireBoardAccess(
   const boardId = c.req.param('boardId')
   const docId = c.req.param('docId')
 
-  const body = await c.req.json()
+  const rawBody = await c.req.text()
+  if (rawBody.length > 2_000_000) return c.json({ error: 'Content too large (max 2MB)' }, 413)
+  const body = JSON.parse(rawBody)
   const schema = z.object({
     title: z.string().min(1).max(200).optional(),
-    content: z.any().optional(),
+    content: z.record(z.unknown()).optional(),
   })
   const { title, content } = schema.parse(body)
 

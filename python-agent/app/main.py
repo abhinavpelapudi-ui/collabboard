@@ -1,3 +1,5 @@
+import hmac
+
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -14,7 +16,7 @@ class AgentAuthMiddleware(BaseHTTPMiddleware):
         if request.url.path == "/health":
             return await call_next(request)
         secret = request.headers.get("x-agent-secret", "")
-        if not secret or secret != settings.agent_shared_secret:
+        if not secret or not hmac.compare_digest(secret, settings.agent_shared_secret):
             return JSONResponse(status_code=403, content={"error": "Forbidden"})
         return await call_next(request)
 

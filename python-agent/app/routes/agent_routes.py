@@ -1,6 +1,7 @@
 """Agent API routes — the main interface between Node.js and the Python agent."""
 
 import asyncio
+import os
 import uuid
 import logging
 
@@ -61,8 +62,11 @@ async def upload_document(
     Extracts text, chunks it, and stores in ChromaDB for later RAG queries.
     Returns document metadata and a preview of the extracted content.
     """
-    # Validate file type
-    filename = file.filename or "unknown"
+    # Sanitize filename: strip path traversal and null bytes
+    raw_name = file.filename or "unknown"
+    filename = os.path.basename(raw_name).replace("\x00", "")
+    if not filename or filename.startswith("."):
+        filename = "unknown"
     extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
     supported_types = {"pdf", "docx", "txt"}
@@ -83,7 +87,7 @@ async def upload_document(
         parsed = parse_document(file_bytes, extension)
     except Exception as e:
         logger.error("Failed to parse document %s: %s", filename, e)
-        raise HTTPException(status_code=422, detail=f"Failed to parse document: {str(e)}")
+        raise HTTPException(status_code=422, detail="Failed to parse document. Please check the file is valid.")
 
     content = parsed["content"]
     metadata = parsed["metadata"]

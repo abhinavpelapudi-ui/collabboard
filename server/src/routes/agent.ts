@@ -6,6 +6,14 @@ import { z } from 'zod'
 import { config } from '../config'
 import { getUserRole } from './boards'
 
+const AGENT_TIMEOUT_MS = 60_000
+
+function agentFetch(url: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS)
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timeout))
+}
+
 const agent = new Hono<{ Variables: AuthVariables }>()
 
 // ─── Per-user rate limit (1 request per 3 seconds) ───────────────────────────
@@ -99,7 +107,7 @@ agent.post('/command', requireAuth, async (c) => {
   // Forward to Python agent
   let agentResult: any
   try {
-    const resp = await fetch(`${config.PYTHON_AGENT_URL}/agent/command`, {
+    const resp = await agentFetch(`${config.PYTHON_AGENT_URL}/agent/command`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Agent-Secret': config.AGENT_SHARED_SECRET },
       body: JSON.stringify({
@@ -113,7 +121,8 @@ agent.post('/command', requireAuth, async (c) => {
     })
     if (!resp.ok) {
       const errText = await resp.text()
-      return c.json({ error: `Agent error: ${errText}` }, 502)
+      console.error('Agent command error:', errText)
+      return c.json({ error: 'AI agent returned an error. Please try again.' }, 502)
     }
     agentResult = await resp.json()
   } catch (err) {
@@ -250,14 +259,15 @@ agent.post('/upload', requireAuth, async (c) => {
 
   let result: any
   try {
-    const resp = await fetch(`${config.PYTHON_AGENT_URL}/agent/upload`, {
+    const resp = await agentFetch(`${config.PYTHON_AGENT_URL}/agent/upload`, {
       method: 'POST',
       headers: { 'X-Agent-Secret': config.AGENT_SHARED_SECRET },
       body: agentFormData,
     })
     if (!resp.ok) {
       const errText = await resp.text()
-      return c.json({ error: `Upload failed: ${errText}` }, 502)
+      console.error('Agent upload error:', errText)
+      return c.json({ error: 'File processing failed. Please try again.' }, 502)
     }
     result = await resp.json()
   } catch (err) {
@@ -332,7 +342,7 @@ agent.post('/dashboard', requireAuth, async (c) => {
   // Forward to Python agent
   let agentResult: any
   try {
-    const resp = await fetch(`${config.PYTHON_AGENT_URL}/agent/dashboard`, {
+    const resp = await agentFetch(`${config.PYTHON_AGENT_URL}/agent/dashboard`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Agent-Secret': config.AGENT_SHARED_SECRET },
       body: JSON.stringify({
@@ -344,7 +354,8 @@ agent.post('/dashboard', requireAuth, async (c) => {
     })
     if (!resp.ok) {
       const errText = await resp.text()
-      return c.json({ error: `Agent error: ${errText}` }, 502)
+      console.error('Agent dashboard error:', errText)
+      return c.json({ error: 'AI agent returned an error. Please try again.' }, 502)
     }
     agentResult = await resp.json()
   } catch (err) {
@@ -367,7 +378,7 @@ agent.get('/costs', requireAuth, async (c) => {
   }
 
   try {
-    const resp = await fetch(`${config.PYTHON_AGENT_URL}/agent/costs`, {
+    const resp = await agentFetch(`${config.PYTHON_AGENT_URL}/agent/costs`, {
       headers: { 'X-Agent-Secret': config.AGENT_SHARED_SECRET },
     })
     if (!resp.ok) return c.json({ error: 'Failed to fetch costs' }, 502)
@@ -379,9 +390,9 @@ agent.get('/costs', requireAuth, async (c) => {
 })
 
 // ─── GET /models — Available LLM models from Python agent ────────────────────
-agent.get('/models', async (c) => {
+agent.get('/models', requireAuth, async (c) => {
   try {
-    const resp = await fetch(`${config.PYTHON_AGENT_URL}/agent/models`, {
+    const resp = await agentFetch(`${config.PYTHON_AGENT_URL}/agent/models`, {
       headers: { 'X-Agent-Secret': config.AGENT_SHARED_SECRET },
     })
     if (!resp.ok) return c.json({ error: 'Failed to fetch models' }, 502)
