@@ -103,7 +103,7 @@ export default function ObjectDetailPanel({ boardId, objectId, socketRef, onClos
   function addUrlAttachment() {
     const url = urlInput.trim()
     if (!url) return
-    try { new URL(url) } catch { return }
+    try { const parsed = new URL(url); if (!['http:', 'https:'].includes(parsed.protocol)) return } catch { return }
     const attachment: ObjectAttachment = {
       id: crypto.randomUUID(),
       type: 'url',

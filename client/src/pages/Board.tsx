@@ -55,6 +55,8 @@ export default function Board() {
   const [activeDocId, setActiveDocId] = useState<string | null>(null)
   const showChatRef = useRef(showChat)
   useEffect(() => { showChatRef.current = showChat }, [showChat])
+  const roleRef = useRef(role)
+  useEffect(() => { roleRef.current = role }, [role])
 
   const isViewer = role === 'viewer'
   const canEdit = role === 'editor' || role === 'owner'
@@ -78,6 +80,10 @@ export default function Board() {
 
       // Undo
       if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); undo(); return }
+
+      // Block state-modifying shortcuts for viewers
+      const currentRole = roleRef.current
+      if (currentRole === 'viewer') return
 
       // Ctrl/Cmd+V — paste clipboard
       if ((e.metaKey || e.ctrlKey) && e.key === 'v') {

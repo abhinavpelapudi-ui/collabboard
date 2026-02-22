@@ -45,6 +45,8 @@ def render_chart(
         A data:image/png;base64,... URL string
     """
     MAX_DATA_POINTS = 200
+    width_px = min(width_px, 2000)
+    height_px = min(height_px, 2000)
     with _chart_lock:
         fig, ax = plt.subplots(figsize=(width_px / 100, height_px / 100), dpi=100)
 
@@ -140,6 +142,8 @@ def render_gantt(
     }
 
     MAX_GANTT_TASKS = 200
+    width_px = min(width_px, 2000)
+    height_px = min(height_px, 2000)
 
     # Parse tasks and compute dates
     parsed = []

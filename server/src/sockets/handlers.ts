@@ -245,8 +245,9 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
   // ─── chat:send ────────────────────────────────────────────────────────────
   socket.on('chat:send', async ({ boardId, content }: { boardId: string; content: string }) => {
     if (!chatRL()) return
+    if (!joinedBoards.has(boardId)) return
     const role = getCachedRole(socket.id, boardId)
-    if (!role) return // user hasn't joined the board room
+    if (!role) return
 
     const trimmed = (content ?? '').trim().slice(0, 2000)
     if (!trimmed) return
@@ -273,6 +274,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
   // ─── comment:create ──────────────────────────────────────────────────────
   socket.on('comment:create', async ({ boardId, objectId, content }: { boardId: string; objectId: string; content: string }) => {
     if (!chatRL()) return
+    if (!joinedBoards.has(boardId)) return
     const role = getCachedRole(socket.id, boardId)
     if (!role || role === 'viewer') return
 

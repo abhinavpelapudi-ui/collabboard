@@ -375,7 +375,7 @@ agent.post('/dashboard', requireAuth, async (c) => {
 agent.get('/costs', requireAuth, async (c) => {
   const adminSecret = c.req.header('x-admin-secret') || ''
   const expected = config.ADMIN_SECRET
-  if (adminSecret.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(adminSecret), Buffer.from(expected))) {
+  if (!expected || !adminSecret || adminSecret.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(adminSecret), Buffer.from(expected))) {
     return c.json({ error: 'Admin access required' }, 403)
   }
 

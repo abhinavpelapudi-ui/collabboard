@@ -1,5 +1,6 @@
 import sys
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,7 +18,7 @@ class Settings(BaseSettings):
     langfuse_host: str = "https://us.cloud.langfuse.com"
     chroma_persist_dir: str = "/app/chroma_data"
     agent_shared_secret: str = ""
-    max_agent_iterations: int = 10
+    max_agent_iterations: int = Field(default=10, ge=1, le=50)
 
 
 settings = Settings()

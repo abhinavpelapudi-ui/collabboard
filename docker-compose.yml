@@ -36,7 +36,7 @@ services:
       - "127.0.0.1:3001:3001"
     environment:
       - PORT=3001
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/collabboard
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-collabboard}
       - REDIS_URL=redis://:${REDIS_PASSWORD:-redisdevpass}@redis:6379
       - CLIENT_URL=http://localhost:5173
       - JWT_SECRET=${JWT_SECRET}

@@ -35,6 +35,16 @@ setInterval(() => {
 // ─── Per-user rate limit (1 request per 3 seconds) ───────────────────────────
 const lastRequestTime = new Map<string, number>()
 
+// Bounded cleanup for AI rate limit map
+const MAX_AI_RATE_SIZE = 500
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, ts] of lastRequestTime) {
+    if (now - ts > 60_000) lastRequestTime.delete(key)
+  }
+  if (lastRequestTime.size > MAX_AI_RATE_SIZE) lastRequestTime.clear()
+}, 60_000)
+
 // ─── Pre-built templates (zero API cost) ─────────────────────────────────────
 type TemplateObject = { type: string; text?: string; color?: string; title?: string; fill?: string; stroke?: string; stroke_width?: number; x: number; y: number; width: number; height: number }
 const TEMPLATES: Record<string, { message: string; objects: TemplateObject[] }> = {

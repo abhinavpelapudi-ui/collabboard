@@ -7,11 +7,11 @@ from app.models.board_objects import BoardAction
 
 class AgentCommandRequest(BaseModel):
     command: str = Field(..., max_length=10_000)
-    board_id: str
+    board_id: str = Field(..., max_length=64, pattern=r'^[a-zA-Z0-9\-]+$')
     board_state: list[dict] = Field(default=[], max_length=500)
     attachments: list[dict] = Field(default=[], max_length=20)
-    user_id: str = ""
-    model: str = ""  # LLM model_id (e.g. "gpt-4o-mini", "claude-haiku")
+    user_id: str = Field(default="", max_length=64)
+    model: str = Field(default="", max_length=50)
     project_context: dict | None = None  # Project metadata when board belongs to a project
 
 
@@ -39,8 +39,8 @@ class DocumentUploadResponse(BaseModel):
 class DashboardQueryRequest(BaseModel):
     command: str = Field(..., max_length=5_000)
     boards: list[dict] = Field(default=[], max_length=200)
-    user_id: str = ""
-    model: str = ""
+    user_id: str = Field(default="", max_length=64)
+    model: str = Field(default="", max_length=50)
 
 
 class DashboardQueryResponse(BaseModel):

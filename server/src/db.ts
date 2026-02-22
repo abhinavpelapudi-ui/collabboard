@@ -6,6 +6,10 @@ export const pool = new Pool({
   ssl: config.NODE_ENV === 'production'
     ? { rejectUnauthorized: !!config.DB_CA_CERT, ...(config.DB_CA_CERT ? { ca: config.DB_CA_CERT } : {}) }
     : false,
+  max: 20,
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 30000,
+  statement_timeout: 30000,
 })
 
 export async function testConnection() {

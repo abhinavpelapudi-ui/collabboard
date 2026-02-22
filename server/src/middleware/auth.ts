@@ -10,7 +10,7 @@ export type AuthVariables = {
 }
 
 function verifyToken(token: string) {
-  const payload = jwt.verify(token, config.JWT_SECRET) as { sub: string; name: string; email: string }
+  const payload = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] }) as { sub: string; name: string; email: string }
   return {
     userId: payload.sub,
     userName: payload.name || payload.email?.split('@')[0] || 'Anonymous',

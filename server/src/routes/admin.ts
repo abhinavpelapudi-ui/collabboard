@@ -12,7 +12,7 @@ const admin = new Hono()
 function requireAdminSecret(c: any, next: any) {
   const secret = c.req.header('X-Admin-Secret') || ''
   const expected = config.ADMIN_SECRET
-  if (secret.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(expected))) {
+  if (!expected || !secret || secret.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(expected))) {
     return c.json({ error: 'Forbidden' }, 403)
   }
   return next()

@@ -10,6 +10,36 @@ import { config } from '../config'
 
 const auth = new Hono()
 
+// ─── OTP brute-force protection (per-email attempt tracking) ────────────────
+const otpAttempts = new Map<string, { count: number; lockedUntil: number }>()
+const OTP_MAX_ATTEMPTS = 5
+const OTP_LOCKOUT_MS = 15 * 60 * 1000 // 15 minutes
+
+function checkOTPAttempt(email: string): string | null {
+  const entry = otpAttempts.get(email)
+  if (entry && Date.now() < entry.lockedUntil) return 'Too many attempts. Try again later.'
+  if (entry && Date.now() >= entry.lockedUntil) otpAttempts.delete(email)
+  return null
+}
+
+function recordOTPFailure(email: string) {
+  const entry = otpAttempts.get(email) || { count: 0, lockedUntil: 0 }
+  entry.count++
+  if (entry.count >= OTP_MAX_ATTEMPTS) entry.lockedUntil = Date.now() + OTP_LOCKOUT_MS
+  otpAttempts.set(email, entry)
+}
+
+function clearOTPAttempts(email: string) { otpAttempts.delete(email) }
+
+// Cleanup stale OTP attempts every 5 minutes
+setInterval(() => {
+  const now = Date.now()
+  for (const [email, entry] of otpAttempts) {
+    if (now >= entry.lockedUntil && entry.lockedUntil > 0) otpAttempts.delete(email)
+  }
+  if (otpAttempts.size > 10_000) otpAttempts.clear()
+}, 5 * 60 * 1000)
+
 // POST /api/auth/register
 auth.post('/register', async (c) => {
   const body = await c.req.json()
@@ -103,7 +133,7 @@ auth.get('/me', async (c) => {
   const token = c.req.header('Authorization')?.split(' ')[1]
   if (!token) return c.json({ error: 'No token' }, 401)
   try {
-    const payload = jwt.verify(token, config.JWT_SECRET) as { sub: string; name: string; email: string }
+    const payload = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] }) as { sub: string; name: string; email: string }
     const { rows } = await pool.query('SELECT plan, email_confirmed FROM users WHERE id = $1', [payload.sub])
     const plan = rows[0]?.plan ?? 'free'
     const emailConfirmed = rows[0]?.email_confirmed ?? false
@@ -192,15 +222,20 @@ auth.post('/otp/verify', async (c) => {
 
   const { email, code, name: providedName } = parsed
 
+  // Brute-force protection: check if email is locked out
+  const lockError = checkOTPAttempt(email)
+  if (lockError) return c.json({ error: lockError }, 429)
+
   const { rows } = await pool.query(
     `SELECT id, expires_at FROM otp_codes WHERE email = $1 AND code = $2 AND used_at IS NULL ORDER BY expires_at DESC LIMIT 1`,
     [email, code]
   )
 
-  if (!rows[0]) return c.json({ error: 'Invalid or expired code.' }, 401)
-  if (new Date(rows[0].expires_at) < new Date()) return c.json({ error: 'Code expired. Request a new one.' }, 401)
+  if (!rows[0]) { recordOTPFailure(email); return c.json({ error: 'Invalid or expired code.' }, 401) }
+  if (new Date(rows[0].expires_at) < new Date()) { recordOTPFailure(email); return c.json({ error: 'Code expired. Request a new one.' }, 401) }
 
-  // Mark code as used
+  // Mark code as used, clear attempt counter
+  clearOTPAttempts(email)
   await pool.query('UPDATE otp_codes SET used_at = now() WHERE id = $1', [rows[0].id])
 
   // Upsert user
@@ -234,7 +269,7 @@ auth.post('/activate-license', async (c) => {
 
   let userId: string
   try {
-    const payload = jwt.verify(token, config.JWT_SECRET) as { sub: string }
+    const payload = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] }) as { sub: string }
     userId = payload.sub
   } catch {
     return c.json({ error: 'Invalid token' }, 401)
