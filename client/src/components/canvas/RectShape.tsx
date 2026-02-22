@@ -7,6 +7,7 @@ import { useBoardStore } from '../../stores/boardStore'
 import { useUIStore } from '../../stores/uiStore'
 import { openTextEditor } from './useTextEdit'
 import { useStageRef } from './StageContext'
+import { ObjectBadges } from './ObjectBadges'
 
 interface Props {
   object: RectObject
@@ -97,6 +98,7 @@ function RectShape({ object, boardId, socketRef, isSelected }: Props) {
           verticalAlign="middle"
         />
       )}
+      <ObjectBadges object={object} />
     </Group>
   )
 }

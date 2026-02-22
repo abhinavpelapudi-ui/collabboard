@@ -43,4 +43,23 @@ comments.post('/boards/:boardId/objects/:objectId/comments', requireAuth, requir
   return c.json({ comment: rows[0] }, 201)
 })
 
+// GET /api/boards/:boardId/comments/counts — batch comment counts for all objects
+comments.get('/boards/:boardId/comments/counts', requireAuth, requireBoardAccess('viewer'), async (c) => {
+  const boardId = c.req.param('boardId')
+
+  const { rows } = await pool.query(
+    `SELECT object_id, COUNT(*)::int AS count
+     FROM object_comments WHERE board_id = $1
+     GROUP BY object_id`,
+    [boardId]
+  )
+
+  const counts: Record<string, number> = {}
+  for (const row of rows) {
+    counts[row.object_id] = row.count
+  }
+
+  return c.json({ counts })
+})
+
 export default comments

@@ -20,6 +20,21 @@ export interface BaseObject {
   due_date?: string
   priority?: 'low' | 'medium' | 'high'
   status?: 'todo' | 'in_progress' | 'review' | 'done'
+  attachments?: ObjectAttachment[]
+}
+
+// ─── Object Attachments ────────────────────────────────────────────────────
+
+export type AttachmentType = 'url' | 'board_doc'
+
+export interface ObjectAttachment {
+  id: string
+  type: AttachmentType
+  url?: string        // For 'url' type: the external URL
+  doc_id?: string     // For 'board_doc' type: board_documents.id
+  title: string       // Display label
+  added_by: string    // user_id
+  added_at: string    // ISO timestamp
 }
 
 export interface StickyObject extends BaseObject {
@@ -207,6 +222,7 @@ export interface ServerToClientEvents {
   'presence:update': (payload: { users: PresenceUser[] }) => void
   'role:changed': (payload: { boardId: string; role: BoardRole }) => void
   'comment:created': (payload: { comment: ObjectComment }) => void
+  'comments:counts': (payload: { counts: Record<string, number> }) => void
   'error': (payload: { message: string }) => void
 }
 

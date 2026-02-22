@@ -14,7 +14,7 @@ export function useSocket(boardId: string, onRoleChanged?: (role: BoardRole) => 
   const onRoleChangedRef = useRef(onRoleChanged)
   onRoleChangedRef.current = onRoleChanged
 
-  const { setObjects, clearObjects, addObject, updateObject, removeObject } = useBoardStore()
+  const { setObjects, clearObjects, addObject, updateObject, removeObject, mergeCommentCounts } = useBoardStore()
   const { updateCursor, removeCursor, clearCursors } = useCursorStore()
   const { setUsers } = usePresenceStore()
   const setConnected = useUIStore(s => s.setConnected)
@@ -52,6 +52,7 @@ export function useSocket(boardId: string, onRoleChanged?: (role: BoardRole) => 
     socket.on('object:update', ({ objectId, props }) => updateObject(objectId, props))
     socket.on('object:delete', ({ objectId }) => removeObject(objectId))
     socket.on('presence:update', ({ users }) => setUsers(users))
+    socket.on('comments:counts', ({ counts }) => mergeCommentCounts(counts))
     socket.on('role:changed', ({ role }) => onRoleChangedRef.current?.(role))
 
     return () => {

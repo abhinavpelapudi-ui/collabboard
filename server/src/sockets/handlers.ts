@@ -103,6 +103,19 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
 
     socket.emit('board:state', { objects })
 
+    // Send comment counts for all objects on this board
+    try {
+      const { rows: countRows } = await pool.query(
+        `SELECT object_id, COUNT(*)::int AS count FROM object_comments WHERE board_id = $1 GROUP BY object_id`,
+        [boardId]
+      )
+      const counts: Record<string, number> = {}
+      for (const row of countRows) counts[row.object_id] = row.count
+      socket.emit('comments:counts', { counts })
+    } catch (err) {
+      console.error('Failed to fetch comment counts on join', err)
+    }
+
     // Broadcast presence update to everyone in the room
     io.to(`board:${boardId}`).emit('presence:update', { users: getBoardUsers(boardId) })
   })
@@ -273,6 +286,14 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
         [objectId, boardId, socket.userId, socket.userName, trimmed]
       )
       io.to(`board:${boardId}`).emit('comment:created', { comment: rows[0] })
+
+      // Broadcast updated comment count for this object
+      const { rows: countRows } = await pool.query(
+        `SELECT COUNT(*)::int AS count FROM object_comments WHERE object_id = $1`, [objectId]
+      )
+      io.to(`board:${boardId}`).emit('comments:counts', {
+        counts: { [objectId]: countRows[0]?.count ?? 0 }
+      })
     } catch (err) {
       console.error('Failed to persist comment', err)
     }

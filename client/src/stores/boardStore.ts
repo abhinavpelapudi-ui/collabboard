@@ -3,6 +3,7 @@ import { BoardObject } from '@collabboard/shared'
 
 interface BoardStore {
   objects: Map<string, BoardObject>
+  commentCounts: Map<string, number>  // objectId → count
   undoStack: BoardObject[][]   // snapshots for undo
   clipboard: BoardObject[]     // copied objects
 
@@ -11,6 +12,7 @@ interface BoardStore {
   addObject: (obj: BoardObject) => void
   updateObject: (objectId: string, props: Partial<BoardObject>) => void
   removeObject: (objectId: string) => void
+  mergeCommentCounts: (counts: Record<string, number>) => void
   pushUndo: () => void
   undo: () => void
   copySelected: (selectedIds: string[]) => void
@@ -19,6 +21,7 @@ interface BoardStore {
 
 export const useBoardStore = create<BoardStore>((set, get) => ({
   objects: new Map(),
+  commentCounts: new Map(),
   undoStack: [],
   clipboard: [],
 
@@ -28,7 +31,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     set({ objects: map })
   },
 
-  clearObjects: () => set({ objects: new Map(), undoStack: [] }),
+  clearObjects: () => set({ objects: new Map(), undoStack: [], commentCounts: new Map() }),
 
   addObject: (obj) => {
     set(state => {
@@ -52,7 +55,19 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     set(state => {
       const next = new Map(state.objects)
       next.delete(objectId)
-      return { objects: next }
+      const nextCounts = new Map(state.commentCounts)
+      nextCounts.delete(objectId)
+      return { objects: next, commentCounts: nextCounts }
+    })
+  },
+
+  mergeCommentCounts: (counts) => {
+    set(state => {
+      const next = new Map(state.commentCounts)
+      for (const [objectId, count] of Object.entries(counts)) {
+        next.set(objectId, count)
+      }
+      return { commentCounts: next }
     })
   },
 
