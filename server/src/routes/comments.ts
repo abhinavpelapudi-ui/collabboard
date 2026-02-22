@@ -1,12 +1,13 @@
 import { Hono } from 'hono'
 import { requireAuth, AuthVariables } from '../middleware/auth'
+import { requireBoardAccess } from '../middleware/boardAuth'
 import { pool } from '../db'
 import { z } from 'zod'
 
 const comments = new Hono<{ Variables: AuthVariables }>()
 
 // GET /api/boards/:boardId/objects/:objectId/comments
-comments.get('/boards/:boardId/objects/:objectId/comments', requireAuth, async (c) => {
+comments.get('/boards/:boardId/objects/:objectId/comments', requireAuth, requireBoardAccess('viewer'), async (c) => {
   const boardId = c.req.param('boardId')
   const objectId = c.req.param('objectId')
 
@@ -21,7 +22,7 @@ comments.get('/boards/:boardId/objects/:objectId/comments', requireAuth, async (
 })
 
 // POST /api/boards/:boardId/objects/:objectId/comments
-comments.post('/boards/:boardId/objects/:objectId/comments', requireAuth, async (c) => {
+comments.post('/boards/:boardId/objects/:objectId/comments', requireAuth, requireBoardAccess('editor'), async (c) => {
   const boardId = c.req.param('boardId')
   const objectId = c.req.param('objectId')
   const userId = c.get('userId')

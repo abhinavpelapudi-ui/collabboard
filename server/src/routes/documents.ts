@@ -1,12 +1,13 @@
 import { Hono } from 'hono'
 import { requireAuth, AuthVariables } from '../middleware/auth'
+import { requireBoardAccess } from '../middleware/boardAuth'
 import { pool } from '../db'
 import { z } from 'zod'
 
 const documents = new Hono<{ Variables: AuthVariables }>()
 
 // GET /api/boards/:boardId/docs
-documents.get('/boards/:boardId/docs', requireAuth, async (c) => {
+documents.get('/boards/:boardId/docs', requireAuth, requireBoardAccess('viewer'), async (c) => {
   const boardId = c.req.param('boardId')
 
   const { rows } = await pool.query(
@@ -20,7 +21,7 @@ documents.get('/boards/:boardId/docs', requireAuth, async (c) => {
 })
 
 // POST /api/boards/:boardId/docs
-documents.post('/boards/:boardId/docs', requireAuth, async (c) => {
+documents.post('/boards/:boardId/docs', requireAuth, requireBoardAccess('editor'), async (c) => {
   const boardId = c.req.param('boardId')
   const userId = c.get('userId')
 
@@ -37,7 +38,7 @@ documents.post('/boards/:boardId/docs', requireAuth, async (c) => {
 })
 
 // GET /api/boards/:boardId/docs/:docId
-documents.get('/boards/:boardId/docs/:docId', requireAuth, async (c) => {
+documents.get('/boards/:boardId/docs/:docId', requireAuth, requireBoardAccess('viewer'), async (c) => {
   const boardId = c.req.param('boardId')
   const docId = c.req.param('docId')
 
@@ -51,7 +52,7 @@ documents.get('/boards/:boardId/docs/:docId', requireAuth, async (c) => {
 })
 
 // PATCH /api/boards/:boardId/docs/:docId
-documents.patch('/boards/:boardId/docs/:docId', requireAuth, async (c) => {
+documents.patch('/boards/:boardId/docs/:docId', requireAuth, requireBoardAccess('editor'), async (c) => {
   const boardId = c.req.param('boardId')
   const docId = c.req.param('docId')
 
@@ -90,7 +91,7 @@ documents.patch('/boards/:boardId/docs/:docId', requireAuth, async (c) => {
 })
 
 // DELETE /api/boards/:boardId/docs/:docId
-documents.delete('/boards/:boardId/docs/:docId', requireAuth, async (c) => {
+documents.delete('/boards/:boardId/docs/:docId', requireAuth, requireBoardAccess('owner'), async (c) => {
   const boardId = c.req.param('boardId')
   const docId = c.req.param('docId')
 

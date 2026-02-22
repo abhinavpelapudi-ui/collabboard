@@ -83,6 +83,10 @@ export default function AIChat({ boardId, socketRef }: Props) {
   }, [])
 
   function applyActions(data: any) {
+    const { pushUndo } = useBoardStore.getState()
+    if (data.createdObjects?.length || data.updatedObjects?.length || data.deletedObjectIds?.length) {
+      pushUndo()
+    }
     if (data.createdObjects?.length) {
       data.createdObjects.forEach((obj: BoardObject) => {
         addObject(obj)

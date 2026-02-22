@@ -56,7 +56,8 @@ boards.get('/', requireAuth, async (c) => {
     // Re-sort by created_at descending after DISTINCT ON
     rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     return c.json(rows)
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch boards:', err)
     return c.json({ error: 'Failed to fetch boards' }, 500)
   }
 })
@@ -119,7 +120,8 @@ boards.post('/', requireAuth, async (c) => {
     )
 
     return c.json({ ...board, role: 'owner' }, 201)
-  } catch {
+  } catch (err) {
+    console.error('Failed to create board:', err)
     return c.json({ error: 'Failed to create board' }, 500)
   }
 })
@@ -141,7 +143,8 @@ boards.get('/:id/chat', requireAuth, async (c) => {
       [boardId]
     )
     return c.json(rows.reverse())
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch chat:', err)
     return c.json({ error: 'Failed to fetch chat' }, 500)
   }
 })
@@ -166,7 +169,8 @@ boards.get('/:id', requireAuth, async (c) => {
     )
     if (!rows[0]) return c.json({ error: 'Board not found' }, 404)
     return c.json(rows[0])
-  } catch {
+  } catch (err) {
+    console.error('Failed to fetch board:', err)
     return c.json({ error: 'Failed to fetch board' }, 500)
   }
 })
@@ -208,7 +212,8 @@ boards.patch('/:id', requireAuth, async (c) => {
     )
     if (!rows[0]) return c.json({ error: 'Board not found' }, 404)
     return c.json(rows[0])
-  } catch {
+  } catch (err) {
+    console.error('Failed to update board:', err)
     return c.json({ error: 'Failed to update board' }, 500)
   }
 })
@@ -222,7 +227,8 @@ boards.delete('/:id', requireAuth, async (c) => {
 
     await pool.query(`DELETE FROM boards WHERE id = $1`, [c.req.param('id')])
     return new Response(null, { status: 204 })
-  } catch {
+  } catch (err) {
+    console.error('Failed to delete board:', err)
     return c.json({ error: 'Failed to delete board' }, 500)
   }
 })

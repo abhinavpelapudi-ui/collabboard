@@ -4,6 +4,7 @@ import { pool } from '../db'
 import { BoardObject } from '@collabboard/shared'
 import { z } from 'zod'
 import { config } from '../config'
+import { getUserRole } from './boards'
 
 const agent = new Hono<{ Variables: AuthVariables }>()
 
@@ -30,6 +31,10 @@ agent.post('/command', requireAuth, async (c) => {
   })
   const { boardId, command, model } = schema.parse(body)
   const userId = c.get('userId')
+
+  // Board access check
+  const role = await getUserRole(boardId, userId)
+  if (!role) return c.json({ error: 'Access denied' }, 403)
 
   // Rate limit
   const lastReq = lastRequestTime.get(userId) || 0
@@ -210,6 +215,10 @@ agent.post('/feedback', requireAuth, async (c) => {
   const { boardId, traceId, rating, comment, command, response, model } = schema.parse(body)
   const userId = c.get('userId')
 
+  // Board access check
+  const role = await getUserRole(boardId, userId)
+  if (!role) return c.json({ error: 'Access denied' }, 403)
+
   await pool.query(
     `INSERT INTO ai_feedback (board_id, user_id, trace_id, rating, comment, command, response, model)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -229,6 +238,10 @@ agent.post('/upload', requireAuth, async (c) => {
   if (!file || !boardId) {
     return c.json({ error: 'Missing file or boardId' }, 400)
   }
+
+  // Board access check
+  const role = await getUserRole(boardId, userId)
+  if (!role) return c.json({ error: 'Access denied' }, 403)
 
   // Forward to Python agent
   const agentFormData = new FormData()

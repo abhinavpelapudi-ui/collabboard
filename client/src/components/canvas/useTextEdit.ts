@@ -18,7 +18,7 @@ interface Options {
  * Works for sticky notes, rect shapes, circle shapes, and frame titles.
  */
 export function openTextEditor(opts: Options) {
-  const konvaStage = opts.stageRef?.current ?? Konva.stages[0]
+  const konvaStage = opts.stageRef?.current
   if (!konvaStage) return
 
   const container = konvaStage.container()

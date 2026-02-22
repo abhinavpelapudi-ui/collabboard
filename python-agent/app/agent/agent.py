@@ -2,6 +2,7 @@
 
 import logging
 import re
+import threading
 import uuid
 
 from langchain_groq import ChatGroq
@@ -286,27 +287,37 @@ def _create_llm(spec: ModelSpec) -> BaseChatModel:
         raise ValueError(f"Unknown provider: {spec.provider}")
 
 
-# Per (model, tool_set) agent cache
+# Per (model, tool_set) agent cache with thread-safe access
 _agent_cache: dict[tuple[str, str], object] = {}
+_agent_cache_lock = threading.Lock()
+_MAX_AGENT_CACHE_SIZE = 20
 
 
 def get_agent(model_id: str = DEFAULT_MODEL_ID, tool_set_key: str = "all"):
     """Get or create a cached agent for the given model and tool set."""
     cache_key = (model_id, tool_set_key)
-    if cache_key not in _agent_cache:
-        spec = get_model_spec(model_id)
-        llm = _create_llm(spec)
-        tools = TOOL_SETS.get(tool_set_key, ALL_TOOLS)
-        _agent_cache[cache_key] = create_react_agent(
-            llm,
-            tools,
-            prompt=SYSTEM_PROMPT,
-        )
-        logger.info(
-            "Created agent for model=%s tool_set=%s (%d tools)",
-            model_id, tool_set_key, len(tools),
-        )
-    return _agent_cache[cache_key]
+    with _agent_cache_lock:
+        if cache_key in _agent_cache:
+            return _agent_cache[cache_key]
+    # Build agent outside the lock (expensive operation)
+    spec = get_model_spec(model_id)
+    llm = _create_llm(spec)
+    tools = TOOL_SETS.get(tool_set_key, ALL_TOOLS)
+    new_agent = create_react_agent(
+        llm,
+        tools,
+        prompt=SYSTEM_PROMPT,
+    )
+    with _agent_cache_lock:
+        if len(_agent_cache) >= _MAX_AGENT_CACHE_SIZE:
+            oldest_key = next(iter(_agent_cache))
+            del _agent_cache[oldest_key]
+        _agent_cache[cache_key] = new_agent
+    logger.info(
+        "Created agent for model=%s tool_set=%s (%d tools)",
+        model_id, tool_set_key, len(tools),
+    )
+    return new_agent
 
 
 MAX_OBJECTS_IN_CONTEXT = 50

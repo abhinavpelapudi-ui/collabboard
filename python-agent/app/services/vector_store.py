@@ -1,6 +1,7 @@
 """ChromaDB vector store for document RAG."""
 
 import logging
+import threading
 import chromadb
 
 from app.config import settings
@@ -8,13 +9,17 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 _client: chromadb.ClientAPI | None = None
+_client_lock = threading.Lock()
 
 
 def get_chroma_client() -> chromadb.ClientAPI:
     global _client
-    if _client is None:
-        _client = chromadb.PersistentClient(path=settings.chroma_persist_dir)
-        logger.info("ChromaDB initialized (persistent at %s)", settings.chroma_persist_dir)
+    if _client is not None:
+        return _client
+    with _client_lock:
+        if _client is None:
+            _client = chromadb.PersistentClient(path=settings.chroma_persist_dir)
+            logger.info("ChromaDB initialized (persistent at %s)", settings.chroma_persist_dir)
     return _client
 
 

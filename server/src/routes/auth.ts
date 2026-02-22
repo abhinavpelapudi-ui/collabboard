@@ -168,7 +168,7 @@ auth.post('/otp/send', async (c) => {
 
   try {
     await sendOTPEmail(email, code)
-    console.log(`[otp] Email sent successfully to ${email}`)
+    if (config.NODE_ENV !== 'production') console.log(`[otp] Email sent to ${email}`)
   } catch (err: any) {
     console.error('[otp] Email send failed:', err?.message ?? err)
     const detail = err?.message || 'Email delivery failed'

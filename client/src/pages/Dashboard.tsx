@@ -73,6 +73,7 @@ export default function Dashboard() {
       socketRef.current = socket
       return () => { socket.disconnect(); socketRef.current = null }
     }
+    return () => {}
   }, [])
 
   async function createBoard() {

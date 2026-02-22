@@ -1,12 +1,14 @@
 import { Hono } from 'hono'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireAuth, AuthVariables } from '../middleware/auth'
+import { requireBoardAccess } from '../middleware/boardAuth'
 import { pool } from '../db'
 import { z } from 'zod'
 import { BoardObject } from '@collabboard/shared'
+import { config } from '../config'
 
 const ai = new Hono<{ Variables: AuthVariables }>()
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const anthropic = new Anthropic({ apiKey: config.ANTHROPIC_API_KEY })
 
 // ─── In-memory cache (command → result, 10 min TTL) ─────────────────────────
 const responseCache = new Map<string, { result: any; expiresAt: number }>()
@@ -212,7 +214,7 @@ const tools: Anthropic.Tool[] = [
   },
 ]
 
-ai.post('/command', requireAuth, async (c) => {
+ai.post('/command', requireAuth, requireBoardAccess('viewer'), async (c) => {
   const body = await c.req.json()
   const schema = z.object({
     boardId: z.string().uuid(),

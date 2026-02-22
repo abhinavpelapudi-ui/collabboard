@@ -1,5 +1,6 @@
 import os
 import logging
+import threading
 
 from langfuse import Langfuse
 
@@ -8,6 +9,7 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 langfuse_client: Langfuse | None = None
+_tracing_lock = threading.Lock()
 
 
 def init_tracing():
@@ -26,11 +28,12 @@ def init_tracing():
 
     # LangFuse: explicit client for callback handler
     if settings.langfuse_secret_key and settings.langfuse_public_key:
-        langfuse_client = Langfuse(
-            secret_key=settings.langfuse_secret_key,
-            public_key=settings.langfuse_public_key,
-            host=settings.langfuse_host,
-        )
+        with _tracing_lock:
+            langfuse_client = Langfuse(
+                secret_key=settings.langfuse_secret_key,
+                public_key=settings.langfuse_public_key,
+                host=settings.langfuse_host,
+            )
         logger.info("LangFuse tracing enabled (host: %s)", settings.langfuse_host)
     else:
         logger.warning("LangFuse tracing disabled — keys not set")
@@ -38,10 +41,11 @@ def init_tracing():
 
 def shutdown_tracing():
     global langfuse_client
-    if langfuse_client:
-        langfuse_client.flush()
-        langfuse_client.shutdown()
-        langfuse_client = None
+    with _tracing_lock:
+        if langfuse_client:
+            langfuse_client.flush()
+            langfuse_client.shutdown()
+            langfuse_client = None
 
 
 def get_langfuse_handler():

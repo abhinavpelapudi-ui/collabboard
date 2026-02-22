@@ -14,7 +14,7 @@ class AgentAuthMiddleware(BaseHTTPMiddleware):
         if request.url.path == "/health":
             return await call_next(request)
         secret = request.headers.get("x-agent-secret", "")
-        if settings.agent_shared_secret and secret != settings.agent_shared_secret:
+        if not secret or secret != settings.agent_shared_secret:
             return JSONResponse(status_code=403, content={"error": "Forbidden"})
         return await call_next(request)
 

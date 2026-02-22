@@ -57,6 +57,7 @@ export default function ObjectDetailPanel({ boardId, objectId, socketRef, onClos
 
   if (!obj) return null
 
+  // Dynamic property access across BoardObject variants requires any
   const props: any = obj
 
   function updateProp(key: string, value: any) {
