@@ -110,6 +110,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
   // ─── cursor:move ──────────────────────────────────────────────────────────
   let lastCursorEmit = 0
   socket.on('cursor:move', ({ boardId, x, y }: { boardId: string; x: number; y: number }) => {
+    if (!joinedBoards.has(boardId)) return // must have joined the board
     const now = Date.now()
     if (now - lastCursorEmit < 16) return // throttle to ~60fps
     lastCursorEmit = now
@@ -127,7 +128,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
   socket.on('object:create', async ({ boardId, object }: { boardId: string; object: BoardObject }) => {
     if (!objectRL()) return
     const role = getCachedRole(socket.id, boardId)
-    if (role === 'viewer') {
+    if (!role || role === 'viewer') {
       socket.emit('error', { message: 'Viewers cannot create objects' })
       return
     }
@@ -159,7 +160,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
   socket.on('object:update', async ({ boardId, objectId, props }: { boardId: string; objectId: string; props: Partial<BoardObject> }) => {
     if (!objectRL()) return
     const role = getCachedRole(socket.id, boardId)
-    if (role === 'viewer') {
+    if (!role || role === 'viewer') {
       socket.emit('error', { message: 'Viewers cannot edit objects' })
       return
     }
@@ -209,7 +210,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
   socket.on('object:delete', async ({ boardId, objectId }: { boardId: string; objectId: string }) => {
     if (!objectRL()) return
     const role = getCachedRole(socket.id, boardId)
-    if (role === 'viewer') {
+    if (!role || role === 'viewer') {
       socket.emit('error', { message: 'Viewers cannot delete objects' })
       return
     }
@@ -260,7 +261,7 @@ export function registerSocketHandlers(io: Server, socket: Socket & { userId: st
   socket.on('comment:create', async ({ boardId, objectId, content }: { boardId: string; objectId: string; content: string }) => {
     if (!chatRL()) return
     const role = getCachedRole(socket.id, boardId)
-    if (!role) return
+    if (!role || role === 'viewer') return
 
     const trimmed = (content ?? '').trim().slice(0, 2000)
     if (!trimmed) return

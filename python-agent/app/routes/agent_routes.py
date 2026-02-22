@@ -76,9 +76,11 @@ async def upload_document(
             detail=f"Unsupported file type: .{extension}. Supported: {', '.join(supported_types)}",
         )
 
-    # Read file
-    file_bytes = await file.read()
+    # Check Content-Length header before reading full body
     max_size = 10 * 1024 * 1024  # 10MB
+    if file.size and file.size > max_size:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB.")
+    file_bytes = await file.read()
     if len(file_bytes) > max_size:
         raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB.")
 

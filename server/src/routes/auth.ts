@@ -171,8 +171,7 @@ auth.post('/otp/send', async (c) => {
     if (config.NODE_ENV !== 'production') console.log(`[otp] Email sent to ${email}`)
   } catch (err: any) {
     console.error('[otp] Email send failed:', err?.message ?? err)
-    const detail = err?.message || 'Email delivery failed'
-    return c.json({ error: `Could not send code: ${detail}` }, 503)
+    return c.json({ error: 'Could not send verification code. Please try again.' }, 503)
   }
 
   return c.json({ ok: true })

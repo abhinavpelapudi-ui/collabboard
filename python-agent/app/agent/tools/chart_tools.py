@@ -82,6 +82,7 @@ def create_dashboard(
     actions = []
     frame_id = new_temp_id("dashboard")
 
+    charts = charts[:12]  # Cap at 12 charts per dashboard
     num_charts = len(charts)
     cols = 2
     chart_w, chart_h = 500, 350

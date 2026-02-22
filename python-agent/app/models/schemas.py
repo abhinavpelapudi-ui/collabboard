@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.board_objects import BoardAction
 
@@ -6,10 +6,10 @@ from app.models.board_objects import BoardAction
 # ── Agent Command ────────────────────────────────────────────────────────────
 
 class AgentCommandRequest(BaseModel):
-    command: str
+    command: str = Field(..., max_length=10_000)
     board_id: str
-    board_state: list[dict] = []
-    attachments: list[dict] = []  # [{"fileId": "...", "fileName": "..."}]
+    board_state: list[dict] = Field(default=[], max_length=500)
+    attachments: list[dict] = Field(default=[], max_length=20)
     user_id: str = ""
     model: str = ""  # LLM model_id (e.g. "gpt-4o-mini", "claude-haiku")
     project_context: dict | None = None  # Project metadata when board belongs to a project
@@ -37,8 +37,8 @@ class DocumentUploadResponse(BaseModel):
 # ── Dashboard Navigator ─────────────────────────────────────────────────────
 
 class DashboardQueryRequest(BaseModel):
-    command: str
-    boards: list[dict] = []  # [{id, title, object_count, object_types, content_preview}]
+    command: str = Field(..., max_length=5_000)
+    boards: list[dict] = Field(default=[], max_length=200)
     user_id: str = ""
     model: str = ""
 

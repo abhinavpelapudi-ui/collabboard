@@ -516,7 +516,7 @@ def run_agent(
     except Exception as e:
         logger.error("Agent execution failed: %s", e)
         return {
-            "message": f"Agent error: {str(e)}",
+            "message": "Sorry, something went wrong processing your request. Please try again.",
             "actions": [],
             "actions_performed": [],
             "trace_id": trace_id,

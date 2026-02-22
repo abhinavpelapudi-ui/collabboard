@@ -54,6 +54,14 @@ app.use('*', async (c, next) => {
 })
 
 app.use('*', trackRequest)
+// Reject oversized request bodies (2MB global limit)
+app.use('*', async (c, next) => {
+  const contentLength = c.req.header('content-length')
+  if (contentLength && parseInt(contentLength, 10) > 2_000_000) {
+    return c.json({ error: 'Request body too large (max 2MB)' }, 413)
+  }
+  await next()
+})
 // Global rate limit: 200 req/min per IP; tighter 30/min on auth routes
 app.use('/api/*', rateLimit(200, 60_000))
 app.use('/api/auth/*', rateLimit(30, 60_000))

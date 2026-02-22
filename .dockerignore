@@ -1,0 +1,42 @@
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+server/.env
+server/.env.*
+client/.env
+client/.env.*
+python-agent/.env
+python-agent/.env.*
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Git
+.git
+.gitignore
+
+# Build artifacts
+client/dist
+server/dist
+
+# IDE and OS
+.vscode
+.idea
+*.swp
+.DS_Store
+
+# Tests
+tests
+coverage
+
+# Docs
+docs
+*.md
+
+# Misc
+1.3-langsmith-langfuse-main
+__pycache__
+**/__pycache__
+*.pyc
