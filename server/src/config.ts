@@ -27,7 +27,7 @@ const envSchema = z.object({
   GITHUB_CLIENT_SECRET: z.string().optional(),
   DB_CA_CERT: z.string().optional(),
   AGENT_SHARED_SECRET: isProd
-    ? z.string().min(16, 'AGENT_SHARED_SECRET required in production')
+    ? z.string().min(16, 'AGENT_SHARED_SECRET required in production — set the same value on both server and python-agent services')
     : z.string().default('agent-dev-secret'),
   TRUSTED_PROXIES: z.string().optional(),
 })
